@@ -15,7 +15,7 @@ Author URI: http://facebook.com/dbuthay
 */
 
 
-require_once("indextank.php");
+require_once("indextank_client.php");
 
 
 // Indextank does not have snippets on responses yet, this plugin fakes them.
@@ -38,34 +38,41 @@ function indextank_search_ids($wp_query){
 		$wp_query->query_vars['s'] = '';
 		$wp_query->query_vars['post__in'] = array(-234234232431); // this number does not exist on the db
 		
-        $it = new IndexTank(get_option("it_api_key"),get_option("it_index_code"));
-		$rs = $it->search($wp_query->query_vars['it_s']);
+		$api_url = get_option("it_api_url");
+        $index_name = get_option("it_index_name");
 		
+		$client = new ApiClient($api_url); 
+        $index = $client->get_index($index_name);
 		
-		if ($rs['status'] == 'OK') {
-			if (isset($rs["results"]) and isset($rs["results"]["docs"])) { 
-				$ids = array_map(
-					create_function('$doc','return $doc["docid"];'),
-					array_values($rs["results"]["docs"])
-					);
-				echo "<!--" . $wp_query->query_vars['it_s']. "  " .print_r($ids,true) . "-->";
-				if ($ids) { 
-					$wp_query->query_vars['post__in'] = $ids;
-					$wp_query->query_vars['post_type'] = "any";
-                    $indextank_results = $rs['results']['matches'];
-                    $indextank_sorted_ids = $ids;
-				
-					/*
-					foreach ($rs['results']['docs'] as $doc){
-						$indextank_snippet_cache[$doc['docid']] = $doc['text'];
-					}
-					*/
-				} 
+        //SHOULD DO TRY
+		echo "<!-- " . $wp_query->query_vars['it_s'] . "-->";
+		
+		try {
+		  $rs = $index->search($wp_query->query_vars['it_s']);
+
+			$ids = array_map(
+				create_function('$doc','return $doc->docid;'),
+				array_values($rs->results)
+				);
+			echo "<!--" . $wp_query->query_vars['it_s']. "  " .print_r($ids,true) . "-->";
+			if ($ids) { 
+				$wp_query->query_vars['post__in'] = $ids;
+				$wp_query->query_vars['post_type'] = "any";
+	                    $indextank_results = $rs->response->matches;
+	                    $indextank_sorted_ids = $ids;
+			
+				/*
+				foreach ($rs['results']['docs'] as $doc){
+					$indextank_snippet_cache[$doc['docid']] = $doc['text'];
+				}
+				*/
 			}
-		} else {
-			// AN ERROR curred. doing nothing, so search keeps on,
-			// the wp.org way.
-		}  
+		} catch (InvalidQuery $e) {
+			//FIXME 
+			//echo "The syntax of the query provided is invalid.";
+		} catch (Exception $e) {
+			//echo "could not perform the requested query.";
+		} 
 	}
 }
 
@@ -219,7 +226,7 @@ function highlight_excerpt($keys, $text) {
 function indextank_the_excerpt($post_excerpt) {
 	global $indextank_snippet_cache, $post, $wp_query, $indextank_sorted_ids;
 	
-	if ($wp_query->is_search and isset($indextank_sorted_ids[$post->ID]) {
+	if ($wp_query->is_search and isset($indextank_sorted_ids[$post->ID])) {
 		
 		$query = $wp_query->query_vars['it_s'];
 		$content =  wp_specialchars( strip_tags( $post->post_content ) );
@@ -244,18 +251,19 @@ add_filter("the_content","indextank_the_excerpt");
 
 
 function indextank_add_post($post_ID){
-	$api_key = get_option("it_api_key");
-	$index_code = get_option("it_index_code");
-	if ($api_key and $index_code) { 
-		$it = new IndexTank($api_key,$index_code);
+	$api_url = get_option("it_api_url");
+	$index_name = get_option("it_index_name");
+	if ($api_url and $index_name) { 
+		$client = new ApiClient($api_url);
+        $index = $client->get_index($index_name);
 		$post = get_post($post_ID);
-		indextank_add_post_raw($it,$post);
+		indextank_add_post_raw($index,$post);
 	}	
 }  
 add_action("save_post","indextank_add_post");
 
 
-function indextank_add_post_raw($it,$post) {
+function indextank_add_post_raw($index,$post) {
 	$content = array();
 	$content['post_author'] = $post->post_author;
 	$content['post_content'] = $post->post_content;
@@ -263,44 +271,39 @@ function indextank_add_post_raw($it,$post) {
 	$content['timestamp'] = strtotime($post->post_date_gmt);
 	$content['text'] = $post->post_title . " " . $post->post_content . " " . $post->post_author; # everything together here
 	if ($post->post_status == "publish") { 
-		$status = $it->add($post->ID,$content);
-		if ($status['status'] == "ERROR"){
-			echo "<b style='color:red'>Could not index $post->post_title on indextank .. " . $status['message'] ." </b><br/>";
-		} else {
-			// NO ERROR. BOOST IT IF NEEDED
-			indextank_boost_post($post->ID);
-		}
+		$res = $index->add_document($post->ID,$content); 
+		indextank_boost_post($post->ID);
 	}
 }
 
 
 function indextank_delete_post($post_ID){
-	$api_key = get_option("it_api_key");
-	$index_code = get_option("it_index_code");
-	if ($api_key and $index_code) { 
-		$it = new IndexTank($api_key,$index_code);
-		$status = $it->del($post_ID);
-       	 	if ($status['status'] == "ERROR"){
-            		echo "could not delete $post_ID on indextank.";
-        	} 
+	$api_url = get_option("it_api_url");
+	$index_name = get_option("it_index_name");
+	if ($api_url and $index_name) { 
+		$client = new ApiClient($api_url);
+        $index = $client->get_index($index_name);
+        $status = $index->del($post_ID);
+      	//echo "could not delete $post_ID on indextank.";
 	} 
 }
 add_action("delete_post","indextank_delete_post");
 
 function indextank_boost_post($post_ID){
-	$api_key = get_option("it_api_key");
-	$index_code = get_option("it_index_code");
-	if ($api_key and $index_code) { 
-		$it = new IndexTank($api_key,$index_code);
+	$api_url = get_option("it_api_url");
+	$index_name = get_option("it_index_name");
+	if ($api_url and $index_name) {
+		$client = new ApiClient($api_url); 
+		$index = $client->get_index($index_name);
         $queries = get_post_custom_values("indextank_boosted_queries",$post_ID);
         if ($queries) {
             //$queries = implode(" " , array_values($queries));
             foreach($queries as $query) {
                 if (!empty($query)) {
-                    $status = $it->promote($post_ID,$query);
-                    if ($status['status'] != 'OK') {
-                        echo "<b style='color:red'>Could not boost $post_ID for query $query on indextank .. " . $status['status'] . $status['message'] ." </b><br>";
-                    }
+                    $res = $index->promote($post_ID,$query);
+                    //if ($res->status != 'OK') {
+                    //    echo "<b style='color:red'>Could not boost $post_ID for query $query on indextank .. " . $status['status'] . $status['message'] ." </b><br>";
+                    //}
                 }
             }
 
@@ -309,10 +312,11 @@ function indextank_boost_post($post_ID){
 }
 
 function indextank_index_all_posts(){
-	$api_key = get_option("it_api_key");
-	$index_code = get_option("it_index_code");
-	if ($api_key and $index_code) { 
-		$it = new IndexTank($api_key,$index_code);
+	$api_url = get_option("it_api_url");
+	$index_name = get_option("it_index_name");
+	if ($api_url and $index_name) { 
+		$client = new ApiClient($api_url);
+		$index = $client->get_index($index_name);
 		$max_execution_time = ini_get('max_execution_time');
 		$max_input_time = ini_get('max_input_time');
 		ini_set('max_execution_time', 0);
@@ -328,7 +332,7 @@ function indextank_index_all_posts(){
 			$last_id = $last_post->ID;
 			for ($id = $last_id; $id > 0; $id--) {
 				$post = get_post($id);
-				indextank_add_post_raw($it,$post);
+				indextank_add_post_raw($index,$post);
 				$count += 1;
 			}
 			$t2 = microtime(true);
@@ -354,11 +358,11 @@ add_action( 'admin_menu', 'indextank_add_pages' );
 function indextank_manage_page() {
 
 	if (isset($_POST['update'])) {
-		if (isset($_POST['api_key']) && $_POST['api_key'] != '' ) {
-			update_option('it_api_key',$_POST['api_key']);
+		if (isset($_POST['api_url']) && $_POST['api_url'] != '' ) {
+			update_option('it_api_url',$_POST['api_url']);
 		} 
-        if (isset($_POST['index_code']) && $_POST['index_code'] != '') {
-            update_option('it_index_code',$_POST['index_code']);
+        if (isset($_POST['index_name']) && $_POST['index_name'] != '') {
+            update_option('it_index_name',$_POST['index_name']);
 		}
 	} 
 
@@ -373,12 +377,12 @@ function indextank_manage_page() {
 	<form METHOD="POST" action="">
 		<table>
 			<tr>
-				<td>API_KEY</td>
-				<td><input type="text" name="api_key" value="<?php echo get_option("it_api_key");?>"/></td>
+				<td>Api URL</td>
+				<td><input type="text" name="api_url" value="<?php echo get_option("it_api_url");?>"/></td>
 			</tr>
 			<tr>
-				<td>INDEX CODE</td>
-				<td><input type="text" name="index_code" value="<?php echo get_option("it_index_code");?>"/></td>
+				<td>Index Name</td>
+				<td><input type="text" name="index_name" value="<?php echo get_option("it_index_name");?>"/></td>
 			</tr>
 			<tr>
 				<td colspan="2"><input type="submit" name="update" value="update"/></td>
@@ -420,9 +424,9 @@ function inject_indextank_head_script(){
             jQuery(function(){
             options = {
                 serviceUrl:'http://api.it-test.flaptor.com/api/v0/search/complete',
-                params: {index_code:'<?php echo get_option("it_index_code");?>'}
+                params: {index_name:'<?php echo get_option("it_index_name");?>'}
 //                serviceUrl:'api.indextank.com/api/v0/search/complete',
-//                params: {index_code:'<?php echo get_option("it_index_code")?>'}
+//                params: {index_name:'<?php echo get_option("it_index_name")?>'}
             };
             a = jQuery('#s').autocomplete(options);
             });
