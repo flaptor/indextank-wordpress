@@ -10,7 +10,7 @@ Plugin Name: IndexTank Search
 Plugin URI: http://indextank.com/
 Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
 Author: Diego Buthay
-Version: 0.2
+Version: 0.3
 Author URI: http://facebook.com/dbuthay
 */
 
@@ -337,7 +337,18 @@ function indextank_index_all_posts(){
 			}
 			$t2 = microtime(true);
 			$time = round($t2-$t1,3);
-			echo "<ul><li>Indexed $count posts in $time seconds</li></ul>";
+      ?>
+        <script>
+          function showMessage() {
+            document.getElementById('indexall_message').innerHTML='<b>Indexed <?=$count?> posts in <?=$time?> seconds</b>';
+          }
+
+          if (window.attachEvent) {window.attachEvent('onload', showMessage);}
+          else if (window.addEventListener) {window.addEventListener('load', showMessage, false);}
+          else {document.addEventListener('load', showMessage, false);}
+          
+        </script>
+      <?
 		}
 		ini_set('max_execution_time', $max_execution_time);
 		ini_set('max_input_time', $max_input_time);
@@ -371,38 +382,61 @@ function indextank_manage_page() {
 	}
 
 	?>
-
-	<h1>IndexTank Search Configuration</h1>
-
+        <div class="wrap">
+        <div id="icon-tools" class="icon32"><br></div>
+        <!--<div style="background: url('http://indextank.com/_static/images/small-gray-logo.png')" class="icon32"><br /></div>-->
+	<img style="float: right; margin: 10px; opacity: 0.5;" src="http://indextank.com/_static/images/color-logo.png">
+        <h2>IndexTank Search Configuration</h2>
+        <p style="line-height: 1.7em">
+           In order to get IndexTank search running on your blog, you first need to open an IndexTank account.<br>
+           You can do it <b><a href="https://indextank.com/get-started/">here</a></b>. There are free plans for you to try out!
+        </p>
+        <p style="line-height: 1.7em">
+           Once you have your account, you'll need to go to your <b><a href="https://indextank.com/dashboard">dashboard</a></b>.<br>
+           There you can create a new index, and then copy your API_URL (you'll find it in your dashboard) and your index name in the fields below:
+        </p>
 	<form METHOD="POST" action="">
-		<table>
-			<tr>
-				<td>Api URL</td>
-				<td><input type="text" name="api_url" value="<?php echo get_option("it_api_url");?>"/></td>
+     <h3>Index parameters</hr>
+		  <table class="form-table"> 
+			   <tr> 
+	         <th><label>API URL</label></th> 
+           <td>
+              <input type="text" name="api_url" size="60" value="<?php echo get_option("it_api_url");?>"/> 
+           </td> 		
+		     </tr>
+			   <tr>
+		       <th><label>Index name</label></th> 
+			   <td>
+              <input type="text" name="index_name" size="15" value="<?php echo get_option("it_index_name");?>"/>
+         </td>
 			</tr>
-			<tr>
-				<td>Index Name</td>
-				<td><input type="text" name="index_name" value="<?php echo get_option("it_index_name");?>"/></td>
-			</tr>
-			<tr>
-				<td colspan="2"><input type="submit" name="update" value="update"/></td>
+      <tr>
+			   <td colspan="2"><input type="submit" name="update" value="Save changes"/></td>
 			</tr>
 		</table>
 	</form>
+        
+  <div style="margin-top: 30px; margin-bottom: 10px;">
+    <hr>
+  </div>
 
+	<div id="icon-edit-pages" class="icon32"><br></div>
+  <h2>Indexing your posts</h2>
+  <p style="line-height: 1.7em">
+     Once your index is running (you can check this in your <a href="https://indextank.com/dashboard">dashboard</a>) you will want to add your existing posts to it.<br>
+     The button below will index (or reindex if they were already there) all your posts:
+  </p>
 
-	<h1>(Re-)Index all posts</h1>
 	<form METHOD="POST" action="" >
-		<table>
-			<tr>
-				<td>This will regenerate your index. You only need to do this after installing this plugin.</td>
-			</tr>
-			<tr>
-				<td><input type="submit" name="index_all" value="Index them!"/></td>
-			</tr>
-		</table>
+	   <input type="submit" name="index_all" value="Index all posts!"/> 
+	   <br>
+	   <div id="indexall_message"></div>
 	</form>
+  <p style="line-height: 1.7em">
+     Once you've done this, every new post will get indexed automatically!
+  </p>
 
+	</div>
 	<?php
 }
 
