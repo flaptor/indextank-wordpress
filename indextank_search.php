@@ -17,14 +17,19 @@
 
 require_once("indextank_client.php");
 
-
+// Snippet cache. Populated during indextank_section_ids and queried 
+// on indextank_the_excerpt
 $indextank_snippet_cache = array();
+// total matches count for query
 $indextank_results = 0;
+// total search time for query
+$indextank_search_time = 0;
 $indextank_sorted_ids = array();
 
 function indextank_search_ids($wp_query){
     global $indextank_snippet_cache;
     global $indextank_results;
+    global $indextank_search_time;
     global $indextank_sorted_ids;
     if ($wp_query->is_search){
         // clear query	
@@ -39,7 +44,20 @@ function indextank_search_ids($wp_query){
         $index = $client->get_index($index_name);
 
         try {
-            $rs = $index->search($wp_query->query_vars['it_s'], 0, 10, 0, "text");
+            $scoring_function = 0;
+            if (isset($wp_query->query_vars['orderby']))
+            {
+                // this requires having 1 scoring function defined for $index.
+                // 0 -> age is the default, provided by indextank
+                // 1 -> should be d[0]
+                // $index->list_functions() can be used to verify this.
+                switch($wp_query->query_vars['orderby']){
+                    case "age" : 
+                    case "time" : $scoring_function = 0; break;
+                    case "comments" : $scoring_function = 1; break;
+                }
+            }
+            $rs = $index->search($wp_query->query_vars['it_s'], 0, 10, $scoring_function, "text");
 
             $ids = array_map(
                     create_function('$doc','return $doc->docid;'),
@@ -49,7 +67,8 @@ function indextank_search_ids($wp_query){
             if ($ids) { 
                 $wp_query->query_vars['post__in'] = $ids;
                 $wp_query->query_vars['post_type'] = "any";
-                $indextank_results = $rs->response->matches;
+                $indextank_results = $rs->matches;
+                $indextank_search_time = $rs->search_time;
                 $indextank_sorted_ids = $ids;
 
                 foreach ($rs->results as $doc){
@@ -69,31 +88,38 @@ function indextank_search_ids($wp_query){
 add_action("pre_get_posts","indextank_search_ids");
 
 
-function indextank_sort_results($posts){
+function indextank_sort_results($posts, $query=NULL){
     global $indextank_sorted_ids;
 
-    $map = array();
-    $sorted = array();
-    if (sizeof($indextank_sorted_ids) == 0) {
-        return $posts;
+    // only rewrite search queries
+    if ($query && $query->is_search) { 
+        $map = array();
+        $sorted = array();
+        if (sizeof($indextank_sorted_ids) == 0) {
+            return $posts;
+        }
+
+        // ok, there were posts .. sort them
+        // first, cache them
+        foreach ($posts as $post) {
+            $map[$post->ID] = $post;
+        }
+
+        // then, append them to "sorted", in the order
+        // they appear on indextank_sorted_ids.
+        foreach ($indextank_sorted_ids as $id) {
+            $sorted[] = $map[$id];
+        }
+
+        return $sorted;
     }
 
-    // ok, there were posts .. sort them
-    // first, cache them
-    foreach ($posts as $post) {
-        $map[$post->ID] = $post;
-    }
-
-    // then, append them to "sorted", in the order
-    // they appear on indextank_sorted_ids.
-    foreach ($indextank_sorted_ids as $id) {
-        $sorted[] = $map[$id];
-    }
-
-    return $sorted;
+    // default action
+    return $posts;
 }
 
-add_action("posts_results","indextank_sort_results");
+
+add_action("posts_results","indextank_sort_results", 10, 2 );
 
 
 // HACKY. We use this to make sure the search input boxes get populated, and the templates
@@ -107,107 +133,6 @@ function indextank_restore_query($ignored_parameter){
     }
 }
 add_action("posts_selection","indextank_restore_query");
-
-
-// the following from scott yang - http://scott.yang.id.au/code/search-excerpt/
-// deprecated as IndexTank now supports snippeting.
-function highlight_excerpt($keys, $text) {
-    $text = strip_tags($text);
-    $text = " " . $text . " " ; 
-
-    for ($i = 0; $i < sizeof($keys); $i ++)
-        $keys[$i] = preg_quote($keys[$i], '/');
-
-    $workkeys = $keys;
-
-    // Extract a fragment per keyword for at most 4 keywords.  First we
-    // collect ranges of text around each keyword, starting/ending at
-    // spaces.  If the sum of all fragments is too short, we look for
-    // second occurrences.
-    $ranges = array();
-    $included = array();
-    $length = 0;
-    while ($length < 256 && count($workkeys)) {
-        foreach ($workkeys as $k => $key) {
-            if (strlen($key) == 0) {
-                unset($workkeys[$k]);
-                continue;
-            }
-            if ($length >= 256) {
-                break;
-            }
-            // Remember occurrence of key so we can skip over it if more
-            // occurrences are desired.
-            if (!isset($included[$key])) {
-                $included[$key] = 0;
-            }
-
-            // NOTE: extra parameter for preg_match requires PHP 4.3.3
-            if (preg_match('/\b'.$key.'\b/iu', $text, $match,
-                        PREG_OFFSET_CAPTURE, $included[$key]))
-            {
-                $p = $match[0][1];
-                $success = 0;
-                if (($q = strpos($text, ' ', max(0, $p - 60))) !== false && $q < $p) {
-                    $end = substr($text, $p, 80);
-                    if (($s = strrpos($end, ' ')) !== false && $s > 0) {
-                        $ranges[$q] = $p + $s;
-                        $length += $p + $s - $q;
-                        $included[$key] = $p + 1;
-                        $success = 1;
-                    }
-                }
-
-                if (!$success) {
-                    unset($workkeys[$k]);
-                }
-            } else {
-                unset($workkeys[$k]);
-            }
-        }
-    }
-
-
-    // If we didn't find anything, return the beginning.
-    if (sizeof($ranges) == 0)
-        return substr($text, 0, 256) . '&nbsp;&#8230;';
-
-
-    // Sort the text ranges by starting position.
-    ksort($ranges);
-
-    // Now we collapse overlapping text ranges into one. The sorting makes
-    // it O(n).
-    $newranges = array();
-    foreach ($ranges as $from2 => $to2) {
-        if (!isset($from1)) {
-            $from1 = $from2;
-            $to1 = $to2;
-            continue;
-        }
-        if ($from2 <= $to1) {
-            $to1 = max($to1, $to2);
-        } else {
-            $newranges[$from1] = $to1;
-            $from1 = $from2;
-            $to1 = $to2;
-        }
-    }
-    $newranges[$from1] = $to1;
-
-    // Fetch text
-    $out = array();
-    foreach ($newranges as $from => $to)
-        $out[] = substr($text, $from, $to - $from);
-
-    $text = (isset($newranges[0]) ? '' : '&#8230;&nbsp;').
-        implode('&nbsp;&#8230;&nbsp;', $out).'&nbsp;&#8230;';
-    $text = preg_replace('/(\b'.implode('\b|\b', $keys) .'\b)/iu',
-            '<strong class="search-excerpt">\0</strong>',
-            $text);
-    return $text;
-}
-
 
 
 function indextank_the_excerpt($post_excerpt) {
@@ -264,11 +189,12 @@ function indextank_delete_post($post_ID){
     if ($api_url and $index_name) { 
         $client = new ApiClient($api_url);
         $index = $client->get_index($index_name);
-        $status = $index->del($post_ID);
+        $status = $index->delete_document($post_ID);
         //echo "could not delete $post_ID on indextank.";
     } 
 }
 add_action("delete_post","indextank_delete_post");
+add_action("trash_post","indextank_delete_post");
 
 function indextank_boost_post($post_ID){
     $api_url = get_option("it_api_url");
@@ -338,6 +264,62 @@ function indextank_index_all_posts(){
 
 // TODO allow to delete the index.
 // TODO allow to create an index.
+
+/** 
+ * Renders the "sort" links. It basically rewrites the query, but changes the "orderby" parameter.
+ * 
+ * NOTE: 
+ *     If you intend to use this, make sure that you have the function '1' defined, and it is
+ *     'd[0]'.
+ *     If you don't have it, indextank will use the post age, no matter what
+ *     If you have another definition for function 1, that will be used (overriding comments count).
+ *     You can check it on http://indextank.com/dashboard/.
+ * 
+ * @param separator. A string to use for sort field separator. Defaults  ','
+ */
+function the_indextank_sort_links($separator=','){
+    global $wp_query;
+
+    // render sort -> age
+    ?>
+    sort by <a href="/?s=<?php echo get_search_query();?>&orderby=age">time</a><?php   echo $separator; ?>
+    <?php
+    // render sort -> comments
+    ?>
+    <a href="/?s=<?php echo get_search_query();?>&orderby=comments">comments</a> 
+    <?php
+}
+
+/**
+ * Renders the query stats. How many results (out of how many total results), and how long it took.
+ * @param: $logo: A boolean indicating whether to display the indextank logo, or not. Default = true.
+ * @param: $time_format: a format to use on sprintf when printing query time. Default = "%.2f"
+ * @param: $strip_leading_zero. A boolean indicating whether to show the leading 0 when queries take less than 1 second. Default = true
+ */
+function the_indextank_query_stats($logo=true, $time_format="%.2f", $strip_leading_zero=true){
+    global $indextank_sorted_ids;
+    global $indextank_results;
+    global $indextank_search_time;
+
+    $pluralized_results = ( $indextank_results == 1 ) ? "result" : "results";
+    echo "<span class='indextank_query_stats'>";
+    if ($indextank_results == count($indextank_sorted_ids)){
+        echo "$indextank_results $pluralized_results for " ;
+    } else {
+        echo count($indextank_sorted_ids) . " out of $indextank_results $pluralized_results for ";
+    }
+    echo "<strong>" . get_search_query() . "</strong> (";
+    $formatted_time = sprintf($time_format, $indextank_search_time);
+    if ($strip_leading_zero) {
+        $formatted_time = str_replace("0.",".", $formatted_time);
+    }
+    echo $formatted_time;
+    echo " seconds)";
+    if ($logo){
+        echo "<a class='logo' href='http://indextank.com'><img class='logo' src='/wp-content/plugins/indextank/powered_by_indextank.png' title='Powered by IndexTank'/></a>";
+    }
+    echo "</span>";
+}
 
 
 function indextank_add_pages() {
