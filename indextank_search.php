@@ -251,7 +251,8 @@ function indextank_add_post_raw($index,$post) {
     $content['timestamp'] = strtotime($post->post_date_gmt);
     $content['text'] = html_entity_decode(strip_tags($post->post_title . " " . $post->post_content . " " . $post->post_author)); # everything together here
         if ($post->post_status == "publish") { 
-            $res = $index->add_document($post->ID,$content); 
+            $vars = array("0" => $post->comment_count);
+            $res = $index->add_document($post->ID,$content, $vars); 
             indextank_boost_post($post->ID);
         }
 }
