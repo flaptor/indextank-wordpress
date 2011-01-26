@@ -26,6 +26,33 @@ $indextank_results = 0;
 $indextank_search_time = 0;
 $indextank_sorted_ids = array();
 
+
+/**
+ * Rewrites the query, so relevance works better.
+ */ 
+function indextank_rewrite_query($query){
+    $query_parts = array();
+
+    // full post, once
+    // snippets won't work without the line below.
+    $query_parts[]= sprintf("(%s)", $query);
+
+    // post_content, once
+    $query_parts[]= sprintf("post_content:(%s)", $query);
+
+    // post title, 5 times
+    for ($i = 0; $i < 5; $i++)
+        $query_parts[]= sprintf("post_title:(%s)", $query);
+    
+    // post author, 3 times
+    for ($i = 0; $i < 3; $i++)
+        $query_parts[]= sprintf("post_author:(%s)", $query);
+
+    // put everything together
+    return implode($query_parts, " OR ");
+
+}
+
 function indextank_search_ids($wp_query){
     global $indextank_snippet_cache;
     global $indextank_results;
@@ -50,14 +77,16 @@ function indextank_search_ids($wp_query){
                 // this requires having 1 scoring function defined for $index.
                 // 0 -> age is the default, provided by indextank
                 // 1 -> should be d[0]
+                // 2 -> should be (relevance+0.05)*(log(max(1, d[0]))-age/1000000)
                 // $index->list_functions() can be used to verify this.
                 switch($wp_query->query_vars['orderby']){
                     case "age" : 
                     case "time" : $scoring_function = 0; break;
                     case "comments" : $scoring_function = 1; break;
+                    case "relevance" : $scoring_function = 2; break;
                 }
             }
-            $rs = $index->search($wp_query->query_vars['it_s'], 0, 10, $scoring_function, "text");
+            $rs = $index->search(indextank_rewrite_query($wp_query->query_vars['it_s']), 0, 10, $scoring_function, "text");
 
             $ids = array_map(
                     create_function('$doc','return $doc->docid;'),
@@ -170,11 +199,12 @@ add_action("save_post","indextank_add_post");
 // we want the post content verbatim.
 function indextank_add_post_raw($index,$post) {
     $content = array();
-    $content['post_author'] = $post->post_author;
+    $userdata = get_userdata($post->post_author);
+    $content['post_author'] = sprintf("%s %s %s", $userdata->user_login, $userdata->first_name, $userdata->last_name);
     $content['post_content'] = html_entity_decode(strip_tags($post->post_content));
     $content['post_title'] = $post->post_title;
     $content['timestamp'] = strtotime($post->post_date_gmt);
-    $content['text'] = html_entity_decode(strip_tags($post->post_title . " " . $post->post_content . " " . $post->post_author)); # everything together here
+    $content['text'] = html_entity_decode(strip_tags($post->post_title . " " . $post->post_content . " " . $content['post_author'])); # everything together here
         if ($post->post_status == "publish") { 
             $vars = array("0" => $post->comment_count);
             $res = $index->add_document($post->ID,$content, $vars); 
@@ -283,6 +313,10 @@ function the_indextank_sort_links($separator=','){
     // render sort -> age
     ?>
     sort by <a href="/?s=<?php echo get_search_query();?>&orderby=age">time</a><?php   echo $separator; ?>
+    <?php
+    // render sort -> relevance
+    ?>
+    <a href="/?s=<?php echo get_search_query();?>&orderby=relevance">relevance</a> 
     <?php
     // render sort -> comments
     ?>
