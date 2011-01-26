@@ -168,7 +168,9 @@ function indextank_the_excerpt($post_excerpt) {
     global $indextank_snippet_cache, $post, $wp_query, $indextank_sorted_ids;
 
     if ($wp_query->is_search and in_array($post->ID, $indextank_sorted_ids)) {
-        if (isset($indextank_snippet_cache[strval($post->ID)])) { 
+        if (isset($indextank_snippet_cache[strval($post->ID)]) and
+            !empty($indextank_snippet_cache[strval($post->ID)])){
+
             return " .. " . $indextank_snippet_cache[strval($post->ID)] . " .. ";
         }
 
