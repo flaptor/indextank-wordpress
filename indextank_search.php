@@ -316,7 +316,7 @@ function the_indextank_query_stats($logo=true, $time_format="%.2f", $strip_leadi
     echo $formatted_time;
     echo " seconds)";
     if ($logo){
-        echo "<a class='logo' href='http://indextank.com'><img class='logo' src='/wp-content/plugins/indextank/powered_by_indextank.png' title='Powered by IndexTank'/></a>";
+        echo "<a class='logo' style='float:right' href='http://indextank.com'><img class='logo' src='/wp-content/plugins/indextank/powered_by_indextank.png' title='Powered by IndexTank'/></a>";
     }
     echo "</span>";
 }
@@ -401,7 +401,7 @@ function indextank_manage_page() {
 
 
 function inject_indextank_head_script(){
-# remove the private part of the API URL.
+    # remove the private part of the API URL.
     $private_api_url = get_option("it_api_url", "http://:aoeu@indextank.com/");
     $parts = explode("@", $private_api_url, 2);
     $public_api_url = $parts[1];
