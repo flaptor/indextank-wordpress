@@ -318,7 +318,7 @@ function the_indextank_sort_links($separator=','){
     <?php
     // render sort -> relevance
     ?>
-    <a href="/?s=<?php echo get_search_query();?>&orderby=relevance">relevance</a> 
+    <a href="/?s=<?php echo get_search_query();?>&orderby=relevance">relevance</a><?php   echo $separator; ?> 
     <?php
     // render sort -> comments
     ?>
