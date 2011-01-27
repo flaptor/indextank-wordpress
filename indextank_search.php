@@ -483,9 +483,18 @@ function inject_indextank_head_script(){
 
 add_action('wp_head','inject_indextank_head_script');
 
-wp_enqueue_style("jquery-ui","http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/flick/jquery-ui.css");
-wp_enqueue_script("jquery-ui","https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js", array("jquery"));
-wp_enqueue_script("jquery");
+
+/* Include CSS and JS only outside admin pages. jQuery from google CDN conflicts with admin pages. see http://core.trac.wordpress.org/ticket/11526 */
+function indextank_include_js_css(){
+    // check it's not an admin page
+    if (!is_admin()) {
+        wp_enqueue_style("jquery-ui","http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/flick/jquery-ui.css");
+        wp_enqueue_script("jquery-ui","https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js", array("jquery"));
+        wp_enqueue_script("jquery");
+    }
+}
+
+add_action("init", "indextank_include_js_css");
 
 
 
