@@ -252,8 +252,15 @@ function indextank_boost_post($post_ID){
 
 
 /**
- * Index all posts on one call.
- * DEPRECATED
+ * Index all posts on one call. It does not work on large blogs, but we keep it as a fallback
+ * for installations without ajax.
+ * 
+ * known drawbacks:
+ * 1. timeouts with lots of posts
+ * 2. post count is wrong
+ * 
+ *
+ * @deprecated
  */
 function indextank_index_all_posts(){
     $api_url = get_option("it_api_url");
@@ -400,7 +407,7 @@ function the_indextank_query_stats($logo=true, $time_format="%.2f", $strip_leadi
     echo $formatted_time;
     echo " seconds)";
     if ($logo){
-        echo "<a class='logo' style='float:right' href='http://indextank.com'><img class='logo' src='/wp-content/plugins/indextank/powered_by_indextank.png' title='Powered by IndexTank'/></a>";
+        echo "<a class='logo' style='float:right' href='http://indextank.com'><img class='logo' src='".plugin_dir_url(__FILE__) ."powered_by_indextank.png' title='Powered by IndexTank'/></a>";
     }
     echo "</span>";
 }
