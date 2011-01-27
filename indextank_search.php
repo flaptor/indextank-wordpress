@@ -250,6 +250,11 @@ function indextank_boost_post($post_ID){
     }
 }
 
+
+/**
+ * Index all posts on one call.
+ * DEPRECATED
+ */
 function indextank_index_all_posts(){
     $api_url = get_option("it_api_url");
     $index_name = get_option("it_index_name");
@@ -292,6 +297,49 @@ function indextank_index_all_posts(){
         ini_set('max_execution_time', $max_execution_time);
         ini_set('max_input_time', $max_input_time);
     }
+}
+
+
+/**
+  * Incremental version of indextank_index_all_posts. It is intended to be used by
+  * the ajax interface.
+  * 
+  * @param $offset: offset of first post to be indexed.
+  * @param $pagesize: number of posts to index per iteration.
+  */
+function indextank_index_posts($offset=0, $pagesize=30){
+    $api_url = get_option("it_api_url");
+    $index_name = get_option("it_index_name");
+    if ($api_url and $index_name) { 
+        $client = new ApiClient($api_url);
+        $index = $client->get_index($index_name);
+        $max_execution_time = ini_get('max_execution_time');
+        $max_input_time = ini_get('max_input_time');
+        ini_set('max_execution_time', 0);
+        ini_set('max_input_time', 0);
+        $t1 = microtime(true);
+        $my_query = new WP_Query();
+        $query_res = $my_query->query("post_status=publish&orderby=ID&order=DESC&posts_per_page=$pagesize&offset=$offset");
+        if ($query_res) {
+            $count = 0;
+            foreach ($query_res as $post) {
+                indextank_add_post_raw($index,$post);
+                $count += 1;
+            }
+            $t2 = microtime(true);
+            $time = round($t2-$t1,3);
+            // count all posts, even from previous iterations
+            $count = $offset + $count;
+            // time is counted only for this iteration. sorry.
+            $message = "<b>Indexed $count posts in $time seconds</b>";
+        }
+        ini_set('max_execution_time', $max_execution_time);
+        ini_set('max_input_time', $max_input_time);
+        return $message;
+    }
+
+    return NULL;
+
 }
 
 // TODO allow to delete the index.
@@ -423,7 +471,7 @@ function indextank_manage_page() {
             </p>
 
             <form METHOD="POST" action="" >
-                <input type="submit" name="index_all" value="Index all posts!"/> 
+                <input id="indextank_ajax_button" type="submit" name="index_all" value="Index all posts!"/> 
                 <br>
                 <div id="indexall_message"></div>
             </form>
@@ -434,6 +482,75 @@ function indextank_manage_page() {
         </div>
         <?php
 }
+
+
+
+
+
+/** FUNCTIONS RELATED TO AJAX INDEXING ON ADMIN PAGE */
+function indextank_set_ajax_button(){
+?>
+    <script type="text/javascript">
+
+    function indextank_poll_indexer($start){
+        $start = $start || 0;
+        var data = {
+            action: 'indextank_handle_ajax_indexing',
+            it_start: $start
+        }
+        jQuery.post(ajaxurl, data, function(response) {
+                // error handling
+                if (response == -1 || response == 0) {
+                    alert ("some error triggered on the backend. is IndexTank plugin installed properly?");
+                } else {
+                    if (response.message) {
+                        jQuery("#indexall_message").html(response.message);
+                    }
+                    
+                    if (response.start  > 0 ) {
+                        indextank_poll_indexer(response.start);
+                    } else {
+                        jQuery("#indexall_message").append(' .. done!');
+                    } 
+                }
+                }, 'json') ;
+    }
+
+
+    jQuery(document).ready(function(){
+        jQuery('#indextank_ajax_button').click(function(){
+            indextank_poll_indexer();
+            return false;
+        });
+    });
+    </script>
+
+<?php
+}
+
+add_action('admin_head', 'indextank_set_ajax_button');
+
+
+function indextank_handle_ajax_indexing(){
+    $start = isset($_POST['it_start']) ? intval($_POST['it_start']) : 0;
+    $start = $start + 10;
+    $step = 30;
+
+    $message = indextank_index_posts($start, $step);
+    if (empty($message)){
+        $message = '';
+        $start = -1;
+    }
+    header("Content-Type: application/json");
+    echo "{\"start\": $start, \"message\" : \"$message\" }";
+    die();
+}
+
+add_action("wp_ajax_indextank_handle_ajax_indexing", "indextank_handle_ajax_indexing");
+
+
+
+
 
 
 function inject_indextank_head_script(){
