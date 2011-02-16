@@ -299,7 +299,7 @@ function indextank_index_all_posts(){
             else {document.addEventListener('load', showMessage, false);}
 
             </script>
-                <?
+                <?php
         }
         ini_set('max_execution_time', $max_execution_time);
         ini_set('max_input_time', $max_input_time);
