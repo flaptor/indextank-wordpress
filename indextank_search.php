@@ -414,8 +414,7 @@ function the_indextank_query_stats($logo=true, $time_format="%.2f", $strip_leadi
 
 
 function indextank_add_pages() {
-    //    add_management_page( 'Indextank Searching', 'Indextank Searching', 'indextank_options', 'indextank_search', 'indextank_manage_page' );
-    add_management_page( 'Indextank Searching', 'Indextank Searching', 'edit_post', __FILE__, 'indextank_manage_page' );
+    add_management_page( 'Indextank Searching', 'Indextank Searching', 'manage_options', __FILE__, 'indextank_manage_page' );
 }
 add_action( 'admin_menu', 'indextank_add_pages' );
 
