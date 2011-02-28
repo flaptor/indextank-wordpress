@@ -3,14 +3,14 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 0.4
+ * @version 0.6
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 0.4
+   Version: 0.6
    Author URI: http://twitter.com/dbuthay
  */
 
@@ -203,10 +203,10 @@ function indextank_add_post_raw($index,$post) {
     $content = array();
     $userdata = get_userdata($post->post_author);
     $content['post_author'] = sprintf("%s %s %s", $userdata->user_login, $userdata->first_name, $userdata->last_name);
-    $content['post_content'] = html_entity_decode(strip_tags($post->post_content));
+    $content['post_content'] = html_entity_decode(strip_tags($post->post_content), ENT_COMPAT, "UTF-8"); 
     $content['post_title'] = $post->post_title;
     $content['timestamp'] = strtotime($post->post_date_gmt);
-    $content['text'] = html_entity_decode(strip_tags($post->post_title . " " . $post->post_content . " " . $content['post_author'])); # everything together here
+    $content['text'] = html_entity_decode(strip_tags($post->post_title . " " . $post->post_content . " " . $content['post_author']), ENT_COMPAT, "UTF-8"); # everything together here
         if ($post->post_status == "publish") { 
             $vars = array("0" => $post->comment_count);
             $res = $index->add_document($post->ID,$content, $vars); 
@@ -330,8 +330,12 @@ function indextank_index_posts($offset=0, $pagesize=30){
         if ($query_res) {
             $count = 0;
             foreach ($query_res as $post) {
-                indextank_add_post_raw($index,$post);
-                $count += 1;
+                try { 
+                    indextank_add_post_raw($index,$post);
+                    $count += 1;
+                } catch (Exception $e) {
+                    // skip
+                }
             }
             $t2 = microtime(true);
             $time = round($t2-$t1,3);
@@ -477,7 +481,8 @@ function indextank_manage_page() {
             </p>
 
             <form METHOD="POST" action="" >
-                <input id="indextank_ajax_button" type="submit" name="index_all" value="Index all posts!"/> 
+                <input id="indextank_ajax_button" type="submit" name="index_all" value="Index all posts!"/>
+                <img id="indextank_ajax_spinner" src="<?php echo admin_url();?>/images/loading.gif" style="display:none"/>
                 <br>
                 <div id="indexall_message"></div>
             </form>
@@ -508,6 +513,7 @@ function indextank_set_ajax_button(){
                 // error handling
                 if (response == -1 || response == 0) {
                     alert ("some error triggered on the backend. is IndexTank plugin installed properly?");
+                    jQuery("#indextank_ajax_spinner").hide();
                 } else {
                     if (response.message) {
                         jQuery("#indexall_message").html(response.message);
@@ -517,6 +523,7 @@ function indextank_set_ajax_button(){
                         indextank_poll_indexer(response.start);
                     } else {
                         jQuery("#indexall_message").append(' .. done!');
+                        jQuery("#indextank_ajax_spinner").hide();
                     } 
                 }
                 }, 'json') ;
@@ -525,6 +532,7 @@ function indextank_set_ajax_button(){
 
     jQuery(document).ready(function(){
         jQuery('#indextank_ajax_button').click(function(){
+            jQuery("#indextank_ajax_spinner").show();
             indextank_poll_indexer();
             return false;
         });
@@ -539,15 +547,17 @@ add_action('admin_head', 'indextank_set_ajax_button');
 
 function indextank_handle_ajax_indexing(){
     $start = isset($_POST['it_start']) ? intval($_POST['it_start']) : 0;
-    $start = $start + 10;
     $step = 30;
 
     $message = indextank_index_posts($start, $step);
+    $start = $start + $step;
+    
     if (empty($message)){
         $message = '';
         $start = -1;
     }
     header("Content-Type: application/json");
+    # start is the number for the next client polling.
     echo "{\"start\": $start, \"message\" : \"$message\" }";
     die();
 }
