@@ -3,14 +3,14 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 0.6
+ * @version 0.7
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 0.6
+   Version: 0.7
    Author URI: http://twitter.com/dbuthay
  */
 
@@ -200,6 +200,34 @@ add_action("save_post","indextank_add_post");
 // add the post, without HTML tags and with entities decoded.
 // we want the post content verbatim.
 function indextank_add_post_raw($index,$post) {
+    if ($post->post_status == "publish") {
+        $data = indextank_post_as_array($post);
+        $res = $index->add_document($data['docid'], $data['fields'], $data['variables']); 
+        indextank_boost_post($post->ID);
+    }
+}
+
+function indextank_batch_add_posts($index, $posts = array()){
+    $data = array();
+    foreach($posts as $post){
+       	if ($post-> post_status == "publish") {
+            $data[] = indextank_post_as_array($post);
+        } 
+    }
+ 
+    $results = $index->add_documents($data);
+
+    foreach($results as $i => $res){
+        if (!$res->added){
+            // TODO do something about this error
+        } else {
+            indextank_boost_post($posts[$i]->ID);
+        } 
+    }
+    
+}
+
+function indextank_post_as_array($post) {
     $content = array();
     $userdata = get_userdata($post->post_author);
     $content['post_author'] = sprintf("%s %s %s", $userdata->user_login, $userdata->first_name, $userdata->last_name);
@@ -207,11 +235,10 @@ function indextank_add_post_raw($index,$post) {
     $content['post_title'] = $post->post_title;
     $content['timestamp'] = strtotime($post->post_date_gmt);
     $content['text'] = html_entity_decode(strip_tags($post->post_title . " " . $post->post_content . " " . $content['post_author']), ENT_COMPAT, "UTF-8"); # everything together here
-        if ($post->post_status == "publish") { 
-            $vars = array("0" => $post->comment_count);
-            $res = $index->add_document($post->ID,$content, $vars); 
-            indextank_boost_post($post->ID);
-        }
+    
+    $vars = array("0" => $post->comment_count);
+
+    return array("docid" => $post->ID, "fields" => $content, "variables" => $vars);
 }
 
 
@@ -329,18 +356,16 @@ function indextank_index_posts($offset=0, $pagesize=30){
         $query_res = $my_query->query("post_status=publish&orderby=ID&order=DESC&posts_per_page=$pagesize&offset=$offset");
         if ($query_res) {
             $count = 0;
-            foreach ($query_res as $post) {
-                try { 
-                    indextank_add_post_raw($index,$post);
-                    $count += 1;
-                } catch (Exception $e) {
-                    // skip
-                }
+            try { 
+                indextank_batch_add_posts($index, $query_res);
+            } catch (Exception $e) {
+                return print_r($e, true);
+                // skip
             }
             $t2 = microtime(true);
             $time = round($t2-$t1,3);
             // count all posts, even from previous iterations
-            $count = $offset + $count;
+            $count = $offset + $pagesize;
             // time is counted only for this iteration. sorry.
             $message = "<b>Indexed $count posts in $time seconds</b>";
         }
