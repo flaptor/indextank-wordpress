@@ -181,6 +181,8 @@ function indextank_the_excerpt($post_excerpt) {
 
 add_filter("the_excerpt","indextank_the_excerpt", 100);
 add_filter("the_content","indextank_the_excerpt", 100);
+add_filter("get_the_excerpt","indextank_the_excerpt", 100);
+add_filter("get_the_content","indextank_the_excerpt", 100);
 
 
 
