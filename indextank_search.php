@@ -627,6 +627,7 @@ function inject_indextank_head_script(){
 
                                         // auto submit when selecting
                                         select: function(event, ui){
+                                            event.target.value = ui.item.value;
                                             event.target.form.submit();
                                         },
                                     });
