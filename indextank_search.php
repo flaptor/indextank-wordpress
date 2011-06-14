@@ -3,14 +3,14 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 0.7
+ * @version 1.0
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 0.7
+   Version: 1.0
    Author URI: http://twitter.com/dbuthay
  */
 
@@ -604,38 +604,34 @@ function inject_indextank_head_script(){
     ?>
         <script>
         jQuery(window).load(function(){
-                var a = jQuery( "#s" ).autocomplete({
-                                        source: function( request, response ) {
-                                                jQuery.ajax({
-                                                    url:'http://<?php echo $public_api_url; ?>/v1/indexes/<?php echo get_option("it_index_name");?>/autocomplete',
-                                                    dataType: "jsonp",
-                                                    data: { query: request.term },
-                                                    success: function( data ) {
-                                                            // create highlighting labels
-                                                            var regex = new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + request.term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi");
-                                                            // Indextank returns the possible terms on an array, data.suggestions.
-                                                            response( jQuery.map( data.suggestions, function( item ) {
-                                                                return {
-                                                                    label: item.replace(regex,"<strong>$1</strong>"),
-                                                                    value: item,
-                                                                };
-                                                             }));
-                                                    }
-                                                });
-                                        },
-                                        minLength: 2,
 
-                                        // auto submit when selecting
-                                        select: function(event, ui){
-                                            event.target.value = ui.item.value;
-                                            event.target.form.submit();
-                                        },
-                                    });
+            var fmt = function(item) {
+                var d = new Date(item.timestamp * 1000);
+                var r = $("<div></div>").addClass("post_box")
+                            .append( $("<div></div>").addClass("headline_area")
+                            .append( $("<h2></h2>").addClass("entry-title")
+                                            .append( $("<a></a>").attr("href", "<?php echo site_url();?>?p=" + item.docid ).html(item.post_title)) )
+                            .append( $("<span></span>").addClass("description").css({'font-size': "1.2em"}).html(item.snippet_text || item.post_content || "").prepend("...").append("..."))
+                            .append( $("<p></p>").addClass("headline_meta")
+                                            .append( " by ", 
+                                                    $("<span></span>").addClass("author").text(item.post_author.substring(0,item.post_author.length/2)),
+                                                     " on ",
+                                                    $("<abbr></abbr").addClass("published").text(d.toDateString())
+                                                    )
+                                    )
+                        );
+                return r;
+            }; 
 
-                // render highlighting labels
-                a.data( "autocomplete" )._renderItem = function( ul, item ) {
-                    return jQuery( "<li></li>" ).data( "item.autocomplete", item ).append( "<a>" + item.label + "</a>" ).appendTo( ul );
-                };
+
+            // create stats container
+            $("#content").before( $("<div id='stats'/>").hide());
+
+            jQuery("#searchform").indextank_Ize("<?php echo $public_api_url;?>","<?php echo get_option("it_index_name");?>");
+            var r = jQuery("#content").indextank_Renderer({format: fmt});
+            var st = jQuery("#stats").indextank_StatsRenderer();
+            jQuery("#s").indextank_Autocomplete().indextank_AjaxSearch({listeners: r.add(st)}).indextank_InstantSearch();
+
         });
 
         </script>	
@@ -650,6 +646,11 @@ function indextank_include_js_css(){
     // check it's not an admin page
     if (!is_admin()) {
         wp_enqueue_style("jquery-ui","http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/flick/jquery-ui.css");
+        wp_enqueue_script("instantsearch","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.instantsearch.js", array("ize"));
+        wp_enqueue_script("autocomplete","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.autocomplete.js", array("ize"));
+        wp_enqueue_script("renderer","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.renderer.js", array("ize"));
+        wp_enqueue_script("ajaxsearch","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.ajaxsearch.js", array("ize"));
+        wp_enqueue_script("ize","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.ize.js", array("jquery"));
         wp_enqueue_script("jquery-ui","https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js", array("jquery"));
         wp_enqueue_script("jquery");
     }
