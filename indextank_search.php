@@ -3,14 +3,14 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.0
+ * @version 0.9.1
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.0
+   Version: 0.9.1
    Author URI: http://twitter.com/dbuthay
  */
 
@@ -600,41 +600,42 @@ function inject_indextank_head_script(){
     # remove the private part of the API URL.
     $private_api_url = get_option("it_api_url", "http://:aoeu@indextank.com/");
     $parts = explode("@", $private_api_url, 2);
-    $public_api_url = $parts[1];
+    $public_api_url = "http://" . $parts[1];
     ?>
         <script>
         jQuery(window).load(function(){
 
             var fmt = function(item) {
                 var d = new Date(item.timestamp * 1000);
-                var r = $("<div></div>").addClass("post_box")
-                            .append( $("<div></div>").addClass("headline_area")
-                            .append( $("<h2></h2>").addClass("entry-title")
-                                            .append( $("<a></a>").attr("href", "<?php echo site_url();?>?p=" + item.docid ).html(item.post_title)) )
-                            .append( $("<span></span>").addClass("description").css({'font-size': "1.2em"}).html(item.snippet_text || item.post_content || "").prepend("...").append("..."))
-                            .append( $("<p></p>").addClass("headline_meta")
-                                            .append( " by ", 
-                                                    $("<span></span>").addClass("author").text(item.post_author.substring(0,item.post_author.length/2)),
-                                                     " on ",
-                                                    $("<abbr></abbr").addClass("published").text(d.toDateString())
-                                                    )
-                                    )
-                        );
+                var r = jQuery("<div/>").addClass("post")
+                                    .append( jQuery("<h1/>")
+                                                    .append( jQuery("<a></a>").attr("href", "<?php echo site_url();?>?p=" + item.docid ).html(item.post_title) )
+                                           )
+                                    .append( jQuery("<div/>").addClass("post_meta")
+                                                    .append( jQuery("<strong/>").text(d.getDay() + "." + d.getMonth() + "." + d.getFullYear()))
+                                                    // TODO add categories
+                                           )
+
+                                    .append( jQuery("<p/>").html(item.snippet_post_content || item.post_content.substring(0, 200) || "").prepend("...").append("...")
+                                           ); 
+                                                                        
                 return r;
             }; 
 
 
             // create stats container
-            $("#content").before( $("<div id='stats'/>").hide());
+            jQuery("#content").before( jQuery("<div id='stats'><span/></div>").hide());
 
             jQuery("#searchform").indextank_Ize("<?php echo $public_api_url;?>","<?php echo get_option("it_index_name");?>");
             var r = jQuery("#content").indextank_Renderer({format: fmt});
             var st = jQuery("#stats").indextank_StatsRenderer();
-            jQuery("#s").indextank_Autocomplete().indextank_AjaxSearch({listeners: r.add(st)}).indextank_InstantSearch();
+            var rw = function (q) { return "post_content:("+q+") OR post_title:("+q+") OR post_author:("+q+")";};
+            jQuery("#s").indextank_Autocomplete().indextank_AjaxSearch({listeners: r.add(st), fields: "post_content,post_author,post_title,timestamp", snippets: "post_content", rewriteQuery:rw}).indextank_InstantSearch();
 
         });
 
-        </script>	
+        </script>
+
 <?php
 }
 
@@ -646,11 +647,13 @@ function indextank_include_js_css(){
     // check it's not an admin page
     if (!is_admin()) {
         wp_enqueue_style("jquery-ui","http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/flick/jquery-ui.css");
-        wp_enqueue_script("instantsearch","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.instantsearch.js", array("ize"));
-        wp_enqueue_script("autocomplete","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.autocomplete.js", array("ize"));
-        wp_enqueue_script("renderer","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.renderer.js", array("ize"));
-        wp_enqueue_script("ajaxsearch","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.ajaxsearch.js", array("ize"));
-        wp_enqueue_script("ize","https://raw.github.com/flaptor/indextank-jquery/master/jquery.indextank.ize.js", array("jquery"));
+        wp_enqueue_script("instantsearch", plugins_url( "js/jquery.indextank.instantsearch.js", __FILE__), array("ize"));
+        wp_enqueue_script("autocomplete", plugins_url( "js/jquery.indextank.autocomplete.js", __FILE__), array("ize"));
+        wp_enqueue_script("statsrenderer", plugins_url( "js/jquery.indextank.statsrenderer.js", __FILE__), array("ize"));
+        wp_enqueue_script("renderer", plugins_url( "js/jquery.indextank.renderer.js", __FILE__), array("ize"));
+        wp_enqueue_script("ajaxsearch", plugins_url( "js/jquery.indextank.ajaxsearch.js", __FILE__), array("ize"));
+        wp_enqueue_script("querybuilder", plugins_url( "js/querybuilder.js", __FILE__), array("ize"));
+        wp_enqueue_script("ize", plugins_url( "js/jquery.indextank.ize.js", __FILE__) , array("jquery"));
         wp_enqueue_script("jquery-ui","https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/jquery-ui.min.js", array("jquery"));
         wp_enqueue_script("jquery");
     }
