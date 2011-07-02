@@ -15,13 +15,13 @@
  */
 
 
-require_once("indextank_client.php");
+require_once("indextank.php");
 
 function indextank_add_post($post_ID){
     $api_url = get_option("it_api_url");
     $index_name = get_option("it_index_name");
     if ($api_url and $index_name) { 
-        $client = new ApiClient($api_url);
+        $client = new Indextank_Api($api_url);
         $index = $client->get_index($index_name);
         $post = get_post($post_ID);
         indextank_add_post_raw($index,$post);
@@ -89,7 +89,7 @@ function indextank_delete_post($post_ID){
     $api_url = get_option("it_api_url");
     $index_name = get_option("it_index_name");
     if ($api_url and $index_name) { 
-        $client = new ApiClient($api_url);
+        $client = new Indextank_Api($api_url);
         $index = $client->get_index($index_name);
         $status = $index->delete_document($post_ID);
         //echo "could not delete $post_ID on indextank.";
@@ -102,7 +102,7 @@ function indextank_boost_post($post_ID){
     $api_url = get_option("it_api_url");
     $index_name = get_option("it_index_name");
     if ($api_url and $index_name) {
-        $client = new ApiClient($api_url); 
+        $client = new Indextank_Api($api_url); 
         $index = $client->get_index($index_name);
         $queries = get_post_custom_values("indextank_boosted_queries",$post_ID);
         if ($queries) {
@@ -132,7 +132,7 @@ function indextank_index_posts($offset=0, $pagesize=30){
     $api_url = get_option("it_api_url");
     $index_name = get_option("it_index_name");
     if ($api_url and $index_name) { 
-        $client = new ApiClient($api_url);
+        $client = new Indextank_Api($api_url);
         $index = $client->get_index($index_name);
         $max_execution_time = ini_get('max_execution_time');
         $max_input_time = ini_get('max_input_time');
@@ -165,8 +165,16 @@ function indextank_index_posts($offset=0, $pagesize=30){
 
 }
 
+function indextank_provision_account() {
+    // TODO allow to create an index.
+    // TODO
+}
+
+function indextank_create_itjq_configuration() {
+    // TODO
+}
+
 // TODO allow to delete the index.
-// TODO allow to create an index.
 
 function indextank_add_pages() {
     add_management_page( 'Indextank Searching', 'Indextank Searching', 'manage_options', __FILE__, 'indextank_manage_page' );
@@ -183,6 +191,14 @@ function indextank_manage_page() {
         if (isset($_POST['index_name']) && $_POST['index_name'] != '') {
             update_option('it_index_name',$_POST['index_name']);
         }
+    }
+
+    if (isset($_POST['provision'])) {
+        indextank_provision_account();
+    } 
+    
+    if (isset($_POST['create-itjq'])) {
+        indextank_create_itjq_configuration();
     } 
 
     if (isset($_POST['index_all'])) {
@@ -192,27 +208,33 @@ function indextank_manage_page() {
     ?>
         <div class="wrap">
             <div id="icon-tools" class="icon32"><br></div>
-            <!--<div style="background: url('http://indextank.com/_static/images/small-gray-logo.png')" class="icon32"><br /></div>-->
-            <img style="float: right; margin: 10px; opacity: 0.5;" src="http://indextank.com/_static/images/color-logo.png">
+            <img style="float: right; margin: 10px; opacity: 0.5;" src="<?php echo dirname(__FILE__);?>/images/color-logo.png">
+            
             <h2>IndexTank Search Configuration</h2>
-            <p style="line-height: 1.7em">
-                In order to get IndexTank search running on your blog, you first need to open an IndexTank account.<br>
-                You can do it <b><a href="https://indextank.com/get-started/">here</a></b>. There are free plans for you to try out!
-            </p>
-            <p style="line-height: 1.7em">
-                Once you have your account, you'll need to go to your <b><a href="https://indextank.com/dashboard">dashboard</a></b>.<br>
-                There you can create a new index, and then copy your API_URL (you'll find it in your dashboard) and your index name in the fields below:
-            </p>
+            <?php
+                if ( ( get_option("it_api_url")     == false ) && 
+                     ( get_option("it_index_name")  == false ) ) { 
+                ?>
+            
+                <p style="line-height: 1.7em">
+                    In order to get IndexTank search running on your blog, you first need to open an IndexTank account.<br>
+                    If you don't have one, you can <form method="POST" action=""><input type="submit" name="provision" value="Get one!"/></form>
+               </p>
+
+                <?php
+                }
+                ?>
+ 
             <form METHOD="POST" action="">
                 <h3>Index parameters</h3>
                 <table class="form-table"> 
                     <tr> 
                         <th><label>API URL</label></th> 
-                        <td><input type="text" name="api_url" size="60" value="<?php echo get_option("it_api_url");?>"/></td> 		
+                        <td><input type="text" name="api_url" size="60" value="<?php echo get_option("it_api_url", "");?>"/></td> 		
                     </tr>
                     <tr>
                         <th><label>Index name</label></th> 
-                        <td><input type="text" name="index_name" size="15" value="<?php echo get_option("it_index_name");?>"/></td>
+                        <td><input type="text" name="index_name" size="15" value="<?php echo get_option("it_index_name", "");?>"/></td>
                     </tr>
                     <tr>
                         <td colspan="2"><input type="submit" name="update" value="Save changes"/></td>
@@ -240,6 +262,17 @@ function indextank_manage_page() {
             <p style="line-height: 1.7em">
                 Once you've done this, every new post will get indexed automatically!
             </p>
+
+            <div id="icon-edit-pages" class="icon32"><br></div>
+            <h2>Look and Feel</h2>
+            <p style="line-height: 1.7em">
+                Indextank is compatible with most Wordpress plugins out-of-the-box. If posts are not rendered nicely, you can try reconfiguring it with
+                <form METHOD="POST" action=""><input type="submit" name="creote-itjq" value="Magic!">
+            </p>
+            <p style="line-height: 1.7em">
+                If you're still having issues (magic isn't always the solution), you may want to edit <b>'indextank/js/blogsearch.js'</b>.
+            </p>
+
 
         </div>
         <?php
