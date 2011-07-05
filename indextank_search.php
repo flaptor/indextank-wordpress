@@ -264,13 +264,20 @@ function indextank_manage_page() {
             <p style="line-height: 1.7em">
                 Once you've done this, every new post will get indexed automatically!
             </p>
+            
+            
+            <div style="margin-top: 30px; margin-bottom: 10px;">
+                <hr>
+            </div>
 
             <div id="icon-edit-pages" class="icon32"><br></div>
             <h2>Look and Feel</h2>
+            <form METHOD="POST" action="">
             <p style="line-height: 1.7em">
                 Indextank is compatible with most Wordpress plugins out-of-the-box. If posts are not rendered nicely, you can try reconfiguring it with
-                <form METHOD="POST" action=""><input type="submit" name="creote-itjq" value="Magic!">
+                <input type="submit" name="create-itjq" value="Magic!">
             </p>
+            </form>
             <p style="line-height: 1.7em">
                 If you're still having issues (magic isn't always the solution), you may want to edit <b>'indextank/js/blogsearch.js'</b>.
             </p>
