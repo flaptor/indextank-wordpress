@@ -215,11 +215,13 @@ function indextank_manage_page() {
                 if ( ( get_option("it_api_url")     == false ) && 
                      ( get_option("it_index_name")  == false ) ) { 
                 ?>
-            
+           
+                <form METHOD="POST" action="">
                 <p style="line-height: 1.7em">
                     In order to get IndexTank search running on your blog, you first need to open an IndexTank account.<br>
-                    If you don't have one, you can <form method="POST" action=""><input type="submit" name="provision" value="Get one!"/></form>
+                    If you don't have one, you can <input type="submit" name="provision" value="Get one!"/>
                </p>
+               </form>
 
                 <?php
                 }
