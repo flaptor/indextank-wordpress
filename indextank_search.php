@@ -165,14 +165,6 @@ function indextank_index_posts($offset=0, $pagesize=30){
 
 }
 
-function indextank_provision_account() {
-    // TODO allow to create an index.
-    // TODO
-}
-
-function indextank_create_itjq_configuration() {
-    // TODO
-}
 
 // TODO allow to delete the index.
 
@@ -288,6 +280,96 @@ function indextank_manage_page() {
 }
 
 
+
+function indextank_provision_account(){ 
+    $TOKEN = "w0rdpr355";
+    $provision_url = "https://wordpress:".$TOKEN."@provision.api.indextank.com/v1/provision";
+    
+    $current_user = wp_get_current_user();
+    $email = $current_user->user_email;
+
+    if (get_option("it_api_url") == "" && get_option("it_index_name") == "" ) {
+
+
+        $args = array(
+                "email" => $email,
+                "plan" => "FREE"
+        );
+        $args = json_encode($args);
+
+        $session = curl_init($provision_url);
+        curl_setopt($session, CURLOPT_CUSTOMREQUEST, "POST"); // Tell curl to use POST
+        curl_setopt($session, CURLOPT_POSTFIELDS, $args); // Tell curl that this is the body of the POST
+        curl_setopt($session, CURLOPT_HEADER, false); // Tell curl not to return headers
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true); // Tell curl to return the response
+        curl_setopt($session, CURLOPT_HTTPHEADER, array('Expect:')); //Fixes the HTTP/1.1 417 Expectation Failed
+
+        // execute the query
+        $response = curl_exec($session);
+        $http_code = curl_getinfo($session, CURLINFO_HTTP_CODE);
+        curl_close($session);
+
+        if ( ($http_code / 100) != 2 ) {
+            return false;
+        }
+
+        $config = json_decode($response);
+        $config = $config->config;
+
+
+        set_option("it_api_url", $config->INDEXTANK_PRIVATE_API_URL);
+        // the index name is ALWAYS idx for public provisioning
+        set_option("it_index_name", "idx");
+
+        return true;
+    }
+
+    // failed
+    return false;
+}
+
+
+function indextank_create_itjq_configuration() {
+    $rss_url = get_bloginfo('rss2_url');
+    $blog_url = site_url();
+    $theme = get_current_theme();
+    
+
+    $params = http_build_query( array(
+        "feed" => $rss_url,
+        "site" => $blog_url,
+        "theme" => $theme
+        )
+    );
+    $session = curl_init("http://wp-it-jq.cloudfoundry.com/generate?".$params);
+        
+        
+    curl_setopt($session, CURLOPT_CUSTOMREQUEST, "GET");
+    curl_setopt($session, CURLOPT_HEADER, false); // Tell curl not to return headers
+    curl_setopt($session, CURLOPT_RETURNTRANSFER, true); // Tell curl to return the response
+    curl_setopt($session, CURLOPT_HTTPHEADER, array('Expect:')); //Fixes the HTTP/1.1 417 Expectation Failed
+
+    // execute the query
+    $response = curl_exec($session);
+    $http_code = curl_getinfo($session, CURLINFO_HTTP_CODE);
+    curl_close($session);
+
+    if ( ($http_code / 100) != 2 ) {
+        return false;
+    }
+
+
+    $target_filename = dirname(__FILE__) . '/js/blogsearch.js';
+
+    // keep the old blogsearch.js, if existed
+    if (file_exists($target_filename)) {
+        rename ($target_filename, $target_filename . '.' . time());
+    }
+
+    // write the new one :)
+    file_put_contents($target_filename, $response);
+
+}
 
 
 
