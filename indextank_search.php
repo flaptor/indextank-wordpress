@@ -281,15 +281,15 @@ function indextank_manage_page() {
 
 
 
-function indextank_provision_account(){ 
+function indextank_provision_account() { 
     $TOKEN = "w0rdpr355";
-    $provision_url = "https://wordpress:".$TOKEN."@provision.api.indextank.com/v1/provision";
+    $provision_url = "http://wordpress:".$TOKEN."@provision.api.indextank.com/v1/provision/public";
     
     $current_user = wp_get_current_user();
     $email = $current_user->user_email;
 
-    if (get_option("it_api_url") == "" && get_option("it_index_name") == "" ) {
-
+    if ( ( get_option("it_api_url")    == false ) && 
+         ( get_option("it_index_name") == false ) ){
 
         $args = array(
                 "email" => $email,
@@ -317,9 +317,9 @@ function indextank_provision_account(){
         $config = $config->config;
 
 
-        set_option("it_api_url", $config->INDEXTANK_PRIVATE_API_URL);
+        update_option("it_api_url", $config->INDEXTANK_PRIVATE_API_URL);
         // the index name is ALWAYS idx for public provisioning
-        set_option("it_index_name", "idx");
+        update_option("it_index_name", "idx");
 
         return true;
     }
