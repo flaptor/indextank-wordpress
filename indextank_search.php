@@ -142,7 +142,6 @@ function indextank_index_posts($offset=0, $pagesize=30){
         $my_query = new WP_Query();
         $query_res = $my_query->query("post_status=publish&orderby=ID&order=DESC&posts_per_page=$pagesize&offset=$offset");
         if ($query_res) {
-            $count = 0;
             try { 
                 indextank_batch_add_posts($index, $query_res);
             } catch (Exception $e) {
@@ -152,7 +151,7 @@ function indextank_index_posts($offset=0, $pagesize=30){
             $t2 = microtime(true);
             $time = round($t2-$t1,3);
             // count all posts, even from previous iterations
-            $count = $offset + $pagesize;
+            $count = $offset + count($query_res);
             // time is counted only for this iteration. sorry.
             $message = "<b>Indexed $count posts in $time seconds</b>";
         }
@@ -243,21 +242,35 @@ function indextank_manage_page() {
             <div id="icon-edit-pages" class="icon32"><br></div>
             <h2>Indexing your posts</h2>
             <p style="line-height: 1.7em">
-                Once your index is running (you can check this in your <a href="https://indextank.com/dashboard">dashboard</a>) you will want to add your existing posts to it.<br>
-                The button below will index (or reindex if they were already there) all your posts:
-            </p>
+            <?php
 
+                $client = new Indextank_Api(get_option("it_api_url"));
+                $index = $client->get_index(get_option("it_index_name"));
+
+                if ($index->has_started()) {
+
+            ?> Your index is <b>RUNNING</b>.
+            The button below will index (or reindex if they were already there) all your posts:
+            </p>
             <form METHOD="POST" action="" >
                 <input id="indextank_ajax_button" type="submit" name="index_all" value="Index all posts!"/>
                 <img id="indextank_ajax_spinner" src="<?php echo admin_url();?>/images/loading.gif" style="display:none"/>
                 <br>
                 <div id="indexall_message"></div>
             </form>
+
             <p style="line-height: 1.7em">
-                Once you've done this, every new post will get indexed automatically!
+                New post will get indexed automatically!
             </p>
-            
-            
+
+            <?php
+                        } else {
+
+            ?>Your index is <b>STARTING</b> .. Please wait a minute and hit 'refresh' on your browser.
+            </p>
+            <?php
+                        } 
+            ?>
             <div style="margin-top: 30px; margin-bottom: 10px;">
                 <hr>
             </div>
