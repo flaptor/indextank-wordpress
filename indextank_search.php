@@ -63,7 +63,7 @@ function indextank_batch_add_posts($index, $posts = array()){
 function indextank_post_as_array($post) {
     $content = array();
     $userdata = get_userdata($post->post_author);
-    $content['post_author'] = sprintf("%s %s %s", $userdata->user_login, $userdata->first_name, $userdata->last_name);
+    $content['post_author'] = sprintf("%s %s", $userdata->first_name, $userdata->last_name);
     $content['post_content'] = html_entity_decode(strip_tags($post->post_content), ENT_COMPAT, "UTF-8"); 
     $content['post_title'] = $post->post_title;
     $content['timestamp'] = strtotime($post->post_date_gmt);
@@ -487,6 +487,7 @@ function indextank_include_js_css(){
         wp_enqueue_script("autocomplete", plugins_url( "js/jquery.indextank.autocomplete.js", __FILE__), array("ize"));
         wp_enqueue_script("statsrenderer", plugins_url( "js/jquery.indextank.statsrenderer.js", __FILE__), array("ize"));
         wp_enqueue_script("renderer", plugins_url( "js/jquery.indextank.renderer.js", __FILE__), array("ize"));
+        wp_enqueue_script("pagination", plugins_url( "js/jquery.indextank.pagination.js", __FILE__), array("ize"));
         wp_enqueue_script("ajaxsearch", plugins_url( "js/jquery.indextank.ajaxsearch.js", __FILE__), array("ize"));
         wp_enqueue_script("querybuilder", plugins_url( "js/querybuilder.js", __FILE__), array("ize"));
         wp_enqueue_script("ize", plugins_url( "js/jquery.indextank.ize.js", __FILE__) , array("jquery"));
