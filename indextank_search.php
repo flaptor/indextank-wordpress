@@ -199,7 +199,7 @@ function indextank_manage_page() {
     ?>
         <div class="wrap">
             <div id="icon-tools" class="icon32"><br></div>
-            <img style="float: right; margin: 10px; opacity: 0.5;" src="<?php echo dirname(__FILE__);?>/images/color-logo.png">
+            <a href="http://indextank.com/" title="indextank.com" style="float:right; border: 0px;" ><img style="margin: 10px; opacity: 0.5;" src="<?php echo plugins_url('/images/color-logo.gif', __FILE__);?>"></a>
             
             <h2>IndexTank Search Configuration</h2>
             <?php
@@ -207,18 +207,19 @@ function indextank_manage_page() {
                      ( get_option("it_index_name")  == false ) ) { 
                 ?>
            
-                <form METHOD="POST" action="">
+                <form METHOD="POST" action="" style="float:left">
                 <p style="line-height: 1.7em">
                     In order to get IndexTank search running on your blog, you first need to open an IndexTank account.<br>
                     If you don't have one, you can <input type="submit" name="provision" value="Get one!"/>
                </p>
                </form>
 
+                <div style="clear:both"></div>
                 <?php
                 }
                 ?>
  
-            <form METHOD="POST" action="">
+            <form METHOD="POST" action="" style="float:left">
                 <h3>Index parameters</h3>
                 <table class="form-table"> 
                     <tr> 
@@ -235,7 +236,7 @@ function indextank_manage_page() {
                 </table>
             </form>
 
-            <div style="margin-top: 30px; margin-bottom: 10px;">
+            <div style="margin-top: 30px; margin-bottom: 10px; clear: both">
                 <hr>
             </div>
 
