@@ -2,7 +2,19 @@
     if(!$.Indextank){
         $.Indextank = new Object();
     };
-    
+
+    // this is a hacky way of getting querybuilder dependencies 
+    // XXX remove this once there's a minified / bundled version of indextank-jquery
+    try {
+        new Query();
+    } catch(e) {
+        // ok, I need to include querybuilder
+        var qscr = $("<script/>").attr("src", "https://raw.github.com/flaptor/indextank-jquery/master/querybuilder.js");
+        $("head").append(qscr);
+    }; 
+
+
+
     $.Indextank.AjaxSearch = function(el, options){
         // To avoid scope issues, use 'base' instead of 'this'
         // to reference this class from internal events and functions.
@@ -31,6 +43,8 @@
                                     .withFetchFields(base.options.fields)
                                     .withSnippetFields(base.options.snippets)
                                     .withScoringFunction(base.options.scoringFunction)
+                                    .withFetchVariables(base.options.fetchVariables)
+                                    .withFetchCategories(base.options.fetchCategories)
                                     .withQueryReWriter(base.options.rewriteQuery);
             
             
@@ -39,12 +53,17 @@
 
             // make it possible for other to trigger an ajax search
             base.$el.bind( "Indextank.AjaxSearch.runQuery", base.runQuery );
+            base.$el.bind( "Indextank.AjaxSearch.displayNoResults", base.displayNoResults );
         };
         
         // Sample Function, Uncomment to use
         // base.functionName = function(paramaters){
         // 
         // };
+
+        base.displayNoResults = function() {
+            base.options.listeners.trigger("Indextank.AjaxSearch.noResults", base.el.value);
+        }
 
         // gets a copy of the default query.
         base.getDefaultQuery = function() {
@@ -82,6 +101,9 @@
                             // I'll save the current query inside 'data',
                             // so our listeners can use it.
                             data.query = query;
+                            // Add a pointer to us, so our listeners can call us back
+                            data.searcher = base.$el;
+                            // notify our listeners
                             base.options.listeners.trigger("Indextank.AjaxSearch.success", data);
                             },
                 error: function( jqXHR, textStatus, errorThrown) {
@@ -124,6 +146,10 @@
         listeners: $([]),
         // scoring function to use
         scoringFunction: 0,
+        // fetch all variables,
+        fetchVariables: 'true',
+        // fetch all categories,
+        fetchCategories: 'true',
         // the default query re-writer is identity
         rewriteQuery: function(q) {return q}
     };

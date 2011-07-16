@@ -471,6 +471,30 @@ function inject_indextank_head_script(){
 
         </script>
 
+
+        <style>
+
+        .pagination {
+            float: left;
+            margin-left: 3px;
+        }
+
+        .pagination li {
+            font-size: 1.4em;
+            float: left;
+            margin: 3px;
+            list-style: none;
+        }
+
+        .pagination .selected {
+            font-weight: bolder;
+        }
+
+        .pagination li:hover {
+            text-decoration: underline;
+        } 
+        </style>
+
 <?php
 }
 

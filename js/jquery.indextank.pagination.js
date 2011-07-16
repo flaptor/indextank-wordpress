@@ -24,13 +24,14 @@
                 base.$el.html("");
 
                 // let's find out the current page
-                var currentPage = ( data.query.start / data.query.rsLength ) + 1;
+                var currentPage = Math.ceil( data.query.start / data.query.rsLength ) + 1;
                 // and how many are there 
-                var totalPages  = ( data.matches / data.query.rsLength ) + 1;
+                var totalPages  = Math.ceil( data.matches / data.query.rsLength );
 
                 // nothing to see here .. go on!
-                if (totalPages == 1 ) return; 
+                if (totalPages < 2 ) return; 
 
+                base.$el.append( $("<div/>").css({'float':'left'}).text('More results'));
                 var ul = $("<ul/>").addClass("pagination");
 
                 // first, put selected page
@@ -75,6 +76,7 @@
 
                 }
 
+
                 // make pages clickable
                 $("li", ul).click(function(e){
                     // make sure the event is prevented .. we don't want
@@ -92,8 +94,12 @@
                     d.searcher.trigger("Indextank.AjaxSearch.runQuery", q);
                 });
 
-                
                 ul.appendTo(base.$el);
+                
+
+                // fix for zero-size, floating non-clickable list items
+                ul.append( $("<div/>").css({ clear: "both" }) );
+                base.$el.append( $("<div/>").css({ clear: "both" }) );
             });
         };
         

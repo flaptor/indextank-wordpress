@@ -61,18 +61,21 @@
       
 
       var setupContainer = function($el) {
-        $el.children().not("#stats").detach();
+        $el.children().not("#stats, #paginator").detach();
       }
 
       // create some placeholders
       var stContainer = jQuery("<div/>").attr("id", "stats").hide();
-      jQuery("#content").prepend(stContainer);
+      stContainer.append( jQuery("<span/>") );
+      var pContainer  = jQuery("<div/>").attr("id", "paginator").hide();
+      jQuery("#content").prepend(pContainer).prepend(stContainer);
 
 
       var rw = function(q) { return 'post_content:(' + q + ') OR post_title:(' + q + ') OR post_author:(' + q + ')';}
       var r = jQuery('#content').indextank_Renderer({format: fmt, setupContainer: setupContainer});
-      var st = jQuery('#stats').indextank_StatsRenderer();
-      var p = jQuery('#pagination').indextank_Pagination();
+      //var st = jQuery('#stats').indextank_StatsRenderer();
+      var st = stContainer.indextank_StatsRenderer();
+      var p = pContainer.indextank_Pagination({maxPages:4});
       jQuery('#s').parents('form').indextank_Ize(INDEXTANK_PUBLIC_URL, INDEXTANK_INDEX_NAME);
       jQuery('#s').indextank_Autocomplete().indextank_AjaxSearch({ listeners: r.add(p).add(st), 
                                                                    fields: 'post_title,post_author,timestamp,url,thumbnail,post_content',
