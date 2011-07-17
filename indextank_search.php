@@ -474,16 +474,20 @@ function inject_indextank_head_script(){
 
         <style>
 
+        #paginator {
+            font-size: 1.4em;
+        }
+
         .pagination {
             float: left;
             margin-left: 3px;
         }
 
         .pagination li {
-            font-size: 1.4em;
             float: left;
-            margin: 3px;
+            margin-left: 3px;
             list-style: none;
+            cursor: pointer;
         }
 
         .pagination .selected {

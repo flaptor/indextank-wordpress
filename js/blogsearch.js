@@ -57,11 +57,17 @@
 		)
 	;
         return r;
-      };
+    };
       
 
       var setupContainer = function($el) {
         $el.children().not("#stats, #paginator").detach();
+      }
+
+      var afterRender = function($el) {
+        // mave paginator to the bottom
+        var p = jQuery("#paginator").detach();
+        $el.append(p);
       }
 
       // create some placeholders
@@ -72,10 +78,10 @@
 
 
       var rw = function(q) { return 'post_content:(' + q + ') OR post_title:(' + q + ') OR post_author:(' + q + ')';}
-      var r = jQuery('#content').indextank_Renderer({format: fmt, setupContainer: setupContainer});
+      var r = jQuery('#content').indextank_Renderer({format: fmt, setupContainer: setupContainer, afterRender:afterRender});
       //var st = jQuery('#stats').indextank_StatsRenderer();
       var st = stContainer.indextank_StatsRenderer();
-      var p = pContainer.indextank_Pagination({maxPages:4});
+      var p = pContainer.indextank_Pagination({maxPages:5});
       jQuery('#s').parents('form').indextank_Ize(INDEXTANK_PUBLIC_URL, INDEXTANK_INDEX_NAME);
       jQuery('#s').indextank_Autocomplete().indextank_AjaxSearch({ listeners: r.add(p).add(st), 
                                                                    fields: 'post_title,post_author,timestamp,url,thumbnail,post_content',
