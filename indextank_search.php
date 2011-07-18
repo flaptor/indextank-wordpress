@@ -297,7 +297,7 @@ function indextank_manage_page() {
 
 function indextank_provision_account() { 
     $TOKEN = "w0rdpr355";
-    $provision_url = "http://wordpress:".$TOKEN."@provision.api.indextank.com/v1/provision/public";
+    $provision_url = "http://wordpress:".$TOKEN."@provision.api.indextank.com/v1/public/resources";
     
     $current_user = wp_get_current_user();
     $email = $current_user->user_email;
