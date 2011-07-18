@@ -196,6 +196,10 @@ function indextank_manage_page() {
         indextank_index_all_posts();
     }
 
+
+    $it_api_url = get_option("it_api_url");
+    $it_index_name = get_option("it_index_name");
+
     ?>
         <div class="wrap">
             <div id="icon-tools" class="icon32"><br></div>
@@ -203,8 +207,8 @@ function indextank_manage_page() {
             
             <h2>IndexTank Search Configuration</h2>
             <?php
-                if ( ( get_option("it_api_url")     == false ) && 
-                     ( get_option("it_index_name")  == false ) ) { 
+                if ( ( $it_api_url     == false ) && 
+                     ( $it_index_name  == false ) ) { 
                 ?>
            
                 <form METHOD="POST" action="" style="float:left">
@@ -240,13 +244,20 @@ function indextank_manage_page() {
                 <hr>
             </div>
 
+
+            <?php 
+                if ( ( $it_api_url     != false ) && 
+                     ( $it_index_name  != false ) ) { 
+                ?>
+
+
             <div id="icon-edit-pages" class="icon32"><br></div>
             <h2>Indexing your posts</h2>
             <p style="line-height: 1.7em">
             <?php
 
-                $client = new Indextank_Api(get_option("it_api_url"));
-                $index = $client->get_index(get_option("it_index_name"));
+                $client = new Indextank_Api($it_api_url);
+                $index = $client->get_index($it_index_name);
 
                 if ($index->has_started()) {
 
@@ -288,6 +299,9 @@ function indextank_manage_page() {
                 If you're still having issues (magic isn't always the solution), you may want to edit <b>'indextank/js/blogsearch.js'</b>.
             </p>
 
+            <?php
+            } // endif it_api_url && it_index_name
+            ?>
 
         </div>
         <?php
@@ -296,7 +310,7 @@ function indextank_manage_page() {
 
 
 function indextank_provision_account() { 
-    $TOKEN = "w0rdpr355";
+    $TOKEN = "3iH42aWmu5qDKM";
     $provision_url = "http://wordpress:".$TOKEN."@provision.api.indextank.com/v1/public/resources";
     
     $current_user = wp_get_current_user();
