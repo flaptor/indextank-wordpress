@@ -24,7 +24,7 @@
 
                 var stats = base.options.format(data);
 
-                var poweredBy = $("<a/>").attr("href", "http://indextank.com/poweredby").css({'padding-left': '10px'})
+                var poweredBy = $("<a/>").attr("href", "http://indextank.com/?utm_campaign=poweredby&utm_source=wordpress-plugin").css({'padding-left': '10px'})
                                     .append( $("<img/>").attr("src", "http://indextank.com/_static/images/poweredby/it-powered-by-small.png"));
 
                 stats.append(poweredBy);
