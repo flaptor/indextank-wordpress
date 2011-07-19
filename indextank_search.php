@@ -349,6 +349,13 @@ function indextank_provision_account() {
         // the index name is ALWAYS idx for public provisioning
         update_option("it_index_name", "idx");
 
+
+        // update default function to 'relevance'
+        $client = new Indextank_Api($config->INDEXTANK_PRIVATE_API_URL);
+        $index = $client->get_index("idx");
+        $index->add_function(0, 'r');
+        $index->add_function(1, '-age');
+
         return true;
     }
 
