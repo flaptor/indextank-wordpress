@@ -366,7 +366,7 @@ function indextank_provision_account() {
 
 function indextank_create_itjq_configuration() {
     $rss_url = get_bloginfo('rss2_url');
-    $blog_url = site_url();
+    $blog_url = home_url();
     $theme = get_current_theme();
     
 
