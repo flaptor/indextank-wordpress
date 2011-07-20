@@ -3,7 +3,7 @@ Contributors: dbuthay, flaptor
 Tags: search, realtime, relevance, better search, autocomplete, ajax, cloud, hosted, instantsearch
 Requires at least: 2.8
 Tested up to: 3.2
-Stable tag: 1.0
+Stable tag: 1.0.2
 
 IndexTank hosted, realtime search (FTW!)
 
@@ -37,6 +37,14 @@ You are all set, now just query something on your blog sidebar. If the results d
 None so far
 
 == Changelog ==
+
+= 1.0.2 = 
+
+* wp-it-jq configuration parameters may not work with *site_url*. See **OR** on http://codex.wordpress.org/Function_Reference/site_url. Using *home_url* instead.
+
+= 1.0.1 = 
+
+* Setting scoring functions when provisioning new accounts
 
 = 1.0 =
 
