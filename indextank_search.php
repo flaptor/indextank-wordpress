@@ -25,7 +25,7 @@ function indextank_add_post($post_ID){
         $index = $client->get_index($index_name);
         $post = get_post($post_ID);
         indextank_add_post_raw($index,$post);
-    }	
+    }
 }  
 add_action("save_post","indextank_add_post");
 
@@ -43,7 +43,7 @@ function indextank_add_post_raw($index,$post) {
 function indextank_batch_add_posts($index, $posts = array()){
     $data = array();
     foreach($posts as $post){
-       	if ($post-> post_status == "publish") {
+        if ($post-> post_status == "publish") {
             $data[] = indextank_post_as_array($post);
         } 
     }
@@ -222,7 +222,7 @@ function indextank_manage_page() {
                 <table class="form-table"> 
                     <tr> 
                         <th><label>API URL</label></th> 
-                        <td><input type="text" name="api_url" size="60" value="<?php echo get_option("it_api_url", "");?>"/></td> 		
+                        <td><input type="text" name="api_url" size="60" value="<?php echo get_option("it_api_url", "");?>"/></td>
                     </tr>
                     <tr>
                         <th><label>Index name</label></th> 
