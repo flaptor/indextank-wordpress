@@ -3,14 +3,14 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.0.2
+ * @version 1.0.3
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.0.2
+   Version: 1.0.3
    Author URI: http://twitter.com/dbuthay
  */
 
@@ -138,22 +138,16 @@ function indextank_index_posts($offset=0, $pagesize=30){
         $max_input_time = ini_get('max_input_time');
         ini_set('max_execution_time', 0);
         ini_set('max_input_time', 0);
-        $t1 = microtime(true);
         $my_query = new WP_Query();
         $query_res = $my_query->query("post_status=publish&orderby=ID&order=DESC&posts_per_page=$pagesize&offset=$offset");
+        $message = "";
         if ($query_res) {
-            try { 
-                indextank_batch_add_posts($index, $query_res);
-            } catch (Exception $e) {
-                return print_r($e, true);
-                // skip
-            }
-            $t2 = microtime(true);
-            $time = round($t2-$t1,3);
+            // this may throw an exception .. let it float!
+            indextank_batch_add_posts($index, $query_res);
+            
             // count all posts, even from previous iterations
             $count = $offset + count($query_res);
-            // time is counted only for this iteration. sorry.
-            $message = "<b>Indexed $count posts in $time seconds</b>";
+            $message = "<b>Indexed $count posts</b>";
         }
         ini_set('max_execution_time', $max_execution_time);
         ini_set('max_input_time', $max_input_time);
@@ -413,41 +407,72 @@ function indextank_set_ajax_button(){
 ?>
     <script type="text/javascript">
 
+    var indextank_indexing_time = 0;
+
     function indextank_poll_indexer($start){
+        // make sure the message container does NOT look like an error .. 
+        jQuery("#indexall_message").removeClass("indextank_error");
         $start = $start || 0;
         var data = {
             action: 'indextank_handle_ajax_indexing',
             it_start: $start
         }
-        jQuery.post(ajaxurl, data, function(response) {
-                // error handling
-                if (response == -1 || response == 0) {
-                    alert ("some error triggered on the backend. is IndexTank plugin installed properly?");
-                    jQuery("#indextank_ajax_spinner").hide();
-                } else {
-                    if (response.message) {
-                        jQuery("#indexall_message").html(response.message);
+        jQuery.ajax(ajaxurl, { 
+
+                  data: data,
+                  dataType: 'json',
+                  type: 'POST',
+                  success: function(response, textStatus) {
+          
+                              if (response == -1 || response == 0) {
+                                alert ("some error triggered on the backend. is IndexTank plugin installed properly?");
+                                jQuery("#indextank_ajax_spinner").hide();
+                              } else {
+                                if (response.status == "continue") { 
+                                  indextank_indexing_time += response.time;
+                                  jQuery("#indexall_message").html(response.message + " in " + indextank_indexing_time.toFixed(3) + " seconds");
+                                  indextank_poll_indexer(response.start);
+                                } else if (response.status == "done") { 
+                                  jQuery("#indexall_message").append(' .. done!');
+                                  jQuery("#indextank_ajax_spinner").hide();
+                                } else if (response.status == "error") {
+                                  jQuery("#indexall_message").html(response.message).addClass("indextank_error");
+                                  jQuery("#indextank_ajax_spinner").hide();
+                                } 
+                              }
+                          }, 
+
+                  error: function(jqXHR, textStatus, errorThrown) {
+                    try {
+                      errorMsg = JSON.parse(jqXHR.responseText).message;
+                    } catch (e) {
+                      errorMsg = jqXHR.responseText;
                     }
-                    
-                    if (response.start  > 0 ) {
-                        indextank_poll_indexer(response.start);
-                    } else {
-                        jQuery("#indexall_message").append(' .. done!');
-                        jQuery("#indextank_ajax_spinner").hide();
-                    } 
+      
+                    jQuery("#indexall_message").html(errorMsg).addClass("indextank_error");
+                    jQuery("#indextank_ajax_spinner").hide();
+                  }
                 }
-                }, 'json') ;
+        );
     }
 
 
     jQuery(document).ready(function(){
         jQuery('#indextank_ajax_button').click(function(){
             jQuery("#indextank_ajax_spinner").show();
+            indextank_indexing_time = 0;
             indextank_poll_indexer();
             return false;
         });
     });
     </script>
+
+    <style>
+      .indextank_error {
+        color: red;
+        font-weight: bolder;
+      }
+    </style>
 
 <?php
 }
@@ -455,21 +480,52 @@ function indextank_set_ajax_button(){
 add_action('admin_head', 'indextank_set_ajax_button');
 
 
-function indextank_handle_ajax_indexing(){
-    $start = isset($_POST['it_start']) ? intval($_POST['it_start']) : 0;
-    $step = 30;
 
-    $message = indextank_index_posts($start, $step);
-    $start = $start + $step;
-    
-    if (empty($message)){
-        $message = '';
-        $start = -1;
-    }
-    header("Content-Type: application/json");
-    # start is the number for the next client polling.
-    echo "{\"start\": $start, \"message\" : \"$message\" }";
+/* Ajax, and violent indexing errors handling */
+function indextank_ajax_error_handler($errno, $errstr){
+  throw new ErrorException($errstr);
+}
+function indextank_ajax_shutdown_function() {
+  $last_error = error_get_last();
+  if ($last_error['type'] === E_ERROR) {
+    echo "{\"status\": \"error\", \"message\": \"" . $last_error['message']. " at " . $last_error['file'] . " line " . $last_error['line']. "\" }";
     die();
+  }
+}
+
+
+function indextank_handle_ajax_indexing(){
+    header("Content-Type: application/json");
+    error_reporting(0);
+    register_shutdown_function('indextank_ajax_shutdown_function');
+    set_error_handler('indextank_ajax_error_handler');
+
+    try { 
+            $start = isset($_POST['it_start']) ? intval($_POST['it_start']) : 0;
+            $step = 20;
+
+            $t1 = microtime(true);
+            $message = indextank_index_posts($start, $step);
+            $t2 = microtime(true);
+            $time = round($t2 - $t1, 3);
+            $start = $start + $step;
+            $status = "continue";
+            
+            if (empty($message)){
+                $status = "done";
+                $message = '';
+                $start = -1;
+            }
+            # start is the number for the next client polling.
+            echo "{\"status\": \"$status\" ,\"start\": $start, \"message\" : \"$message\", \"time\" : $time }";
+
+
+    } catch (Exception $e) {
+      echo "{\"status\": \"error\", \"message\": \" " . $e->getMessage(). "\" }";
+    }
+            
+    die();
+
 }
 
 add_action("wp_ajax_indextank_handle_ajax_indexing", "indextank_handle_ajax_indexing");
