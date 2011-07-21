@@ -3,14 +3,14 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.0.3
+ * @version 1.0.4
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.0.3
+   Version: 1.0.4
    Author URI: http://twitter.com/dbuthay
  */
 
