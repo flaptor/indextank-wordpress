@@ -3,7 +3,7 @@ Contributors: dbuthay, flaptor
 Tags: search, realtime, relevance, better search, autocomplete, ajax, cloud, hosted, instantsearch
 Requires at least: 2.8
 Tested up to: 3.2
-Stable tag: 1.0.3
+Stable tag: 1.0.4
 
 IndexTank hosted, realtime search (FTW!)
 
@@ -37,6 +37,11 @@ You are all set, now just query something on your blog sidebar. If the results d
 None so far
 
 == Changelog ==
+
+= 1.0.4 = 
+
+* indexing working with templates that don't provide get_post_thumbnail_id() // thanks [@dtunkelang](http://twitter.com/dtunkelang)
+* indextank client upgraded. No dependencies en pecl_http
 
 = 1.0.3 = 
 

@@ -71,13 +71,13 @@ function indextank_post_as_array($post) {
     $content['url'] = get_permalink($post->ID);
 
 
-    // grab thumbnail
-    $content['thumbnail'] =  wp_get_attachment_image_src( get_post_thumbnail_id($post->ID));
-    if ($content['thumbnail'] == NULL) { 
-        unset($content['thumbnail']);
-    } else { 
-        $content['thumbnail'] = $content['thumbnail'][0];
-    }  
+    // grab thumbnail, if possible
+    if (function_exists("get_post_thumbnail_id")) { 
+        $thumbnails =  wp_get_attachment_image_src( get_post_thumbnail_id($post->ID));
+        if ($thumbnails != NULL) { 
+            $content['thumbnail'] = $thumbnails[0];
+        }  
+    }
 
     $vars = array("0" => $post->comment_count);
 
