@@ -222,7 +222,7 @@ function indextank_manage_page() {
                 <table class="form-table"> 
                     <tr> 
                         <th><label>API URL</label></th> 
-                        <td><input type="text" name="api_url" size="60" value="<?php echo get_option("it_api_url", "");?>"/></td>
+                        <td><input type="text" name="api_url" size="48" value="<?php echo get_option("it_api_url", "");?>"/></td>
                     </tr>
                     <tr>
                         <th><label>Index name</label></th> 
