@@ -44,10 +44,10 @@ class Indextank_Api
         return json_decode($this->api_call('GET', $this->indexes_url())->response);
     }
 
-    public function create_index($index_name)
+    public function create_index($index_name, $options = array())
     {
         $index = $this->get_index($index_name);
-        $index->create_index();
+        $index->create_index($options);
         return $index;
     }
 
@@ -72,7 +72,7 @@ class Indextank_Api
      */
     public function api_call($method, $url, $params = array(), $http_options = array())
     {
-        if ($method == "GET") {
+        if ($method == "GET" || $method == "DELETE") {
             $args = http_build_query($params);
             $url .= '?' . $args;
             $args = '';

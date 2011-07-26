@@ -3,7 +3,7 @@ Contributors: dbuthay, flaptor
 Tags: search, realtime, relevance, better search, autocomplete, ajax, cloud, hosted, instantsearch
 Requires at least: 2.8
 Tested up to: 3.2
-Stable tag: 1.0.4
+Stable tag: 1.1
 
 IndexTank hosted, realtime search (FTW!)
 
@@ -38,9 +38,17 @@ None so far
 
 == Changelog ==
 
+= 1.1 = 
+
+* Apply filters on content before indexing. Fixes MardDown problems.
+* Prefix document ids with home_url(). Allows to have multiple blogs indexed on the same index.
+* Index format versioning. New index format changes will alert blog owners
+* *Reset index* button
+
+
 = 1.0.4 = 
 
-* indexing working with templates that don't provide get_post_thumbnail_id() // thanks [@dtunkelang](http://twitter.com/dtunkelang)
+* indexing working with templates that don't provide get_post_thumbnail_id() // thanks @dtunkelang
 * indextank client upgraded. No dependencies en pecl_http
 
 = 1.0.3 = 

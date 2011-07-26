@@ -3,19 +3,24 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.0.4
+ * @version 1.1
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.0.4
+   Version: 1.1
    Author URI: http://twitter.com/dbuthay
  */
 
 
 require_once("indextank.php");
+
+// the indextank index format version.
+// this number should be bumped whenever the plugin changes the way
+// document ids are stored.
+define('INDEXTANK_INDEX_FORMAT_VERSION', 1);
 
 function indextank_add_post($post_ID){
     $api_url = get_option("it_api_url");
@@ -64,10 +69,10 @@ function indextank_post_as_array($post) {
     $content = array();
     $userdata = get_userdata($post->post_author);
     $content['post_author'] = sprintf("%s %s", $userdata->first_name, $userdata->last_name);
-    $content['post_content'] = html_entity_decode(strip_tags($post->post_content), ENT_COMPAT, "UTF-8"); 
+    $content['post_content'] = html_entity_decode(strip_tags(apply_filters("the_content", $post->post_content)), ENT_COMPAT, "UTF-8"); 
     $content['post_title'] = $post->post_title;
     $content['timestamp'] = strtotime($post->post_date_gmt);
-    $content['text'] = html_entity_decode(strip_tags($post->post_title . " " . $post->post_content . " " . $content['post_author']), ENT_COMPAT, "UTF-8"); # everything together here
+    $content['text'] = html_entity_decode(strip_tags(apply_filters( "the_content", $post->post_title . " " . $post->post_content . " " . $content['post_author']) ), ENT_COMPAT, "UTF-8"); # everything together here
     $content['url'] = get_permalink($post->ID);
 
 
@@ -81,7 +86,7 @@ function indextank_post_as_array($post) {
 
     $vars = array("0" => $post->comment_count);
 
-    return array("docid" => $post->ID, "fields" => $content, "variables" => $vars);
+    return array("docid" => home_url() . $post->ID, "fields" => $content, "variables" => $vars);
 }
 
 
@@ -161,6 +166,19 @@ function indextank_index_posts($offset=0, $pagesize=30){
 
 // TODO allow to delete the index.
 
+function indextank_notify_upgrade_needed() {
+    // this version number has to do with the 'format' of the index. Not the plugin version
+    // whenever IDs change on an index, this version should be BUMPED
+    $installed_version = intval(get_option("it_index_version", 0));
+
+    if ($installed_version < INDEXTANK_INDEX_FORMAT_VERSION) {
+        echo '<div id="message" class="updated">You MUST update your <strong>IndexTank</strong> index. Go to Indextank <a href="';
+        echo admin_url('tools.php?page=indextank/indextank_search.php');
+        echo '">Settings</a></div>';
+    }     
+}
+add_action( 'admin_notices', 'indextank_notify_upgrade_needed');
+
 function indextank_add_pages() {
     add_management_page( 'Indextank Searching', 'Indextank Searching', 'manage_options', __FILE__, 'indextank_manage_page' );
 }
@@ -188,6 +206,10 @@ function indextank_manage_page() {
 
     if (isset($_POST['index_all'])) {
         indextank_index_all_posts();
+    }
+
+    if (isset($_POST['it_reset'])) {
+        indextank_reset_index();
     }
 
 
@@ -254,6 +276,10 @@ function indextank_manage_page() {
                 $index = $client->get_index($it_index_name);
 
                 if ($index->has_started()) {
+                    if (get_option("it_need_default_parameters")) {
+                        indextank_set_default_index_parameters();
+                        delete_option("it_need_default_parameters");
+                    } 
 
             ?> Your index is <b>RUNNING</b>.
             The button below will index (or reindex if they were already there) all your posts:
@@ -277,6 +303,31 @@ function indextank_manage_page() {
             <?php
                         } 
             ?>
+            <div style="margin-top: 30px; margin-bottom: 10px;">
+                <hr>
+            </div>
+
+            
+            <div id="icon-edit-pages" class="icon32"><br></div>
+            <h2>Reset your index</h2>
+            <form METHOD="POST" action="">
+                <?php
+                    $installed_version = intval(get_option("it_index_version", 0));
+
+                    if ($installed_version < INDEXTANK_INDEX_FORMAT_VERSION) {
+                ?>
+                    <div style="background-color: #E6DB55">You <strong>NEED</strong> to reset your index after the last upgrade.</div>
+                <?php 
+                    } else { 
+                ?>
+                    <p>You can reset your index. It will completely clear it. You'll have to re-index afterwards.</p>
+                <?php
+                    } 
+                ?>
+                <input type="submit" name="it_reset" value="Reset the index!">
+            </form>
+            
+            
             <div style="margin-top: 30px; margin-bottom: 10px;">
                 <hr>
             </div>
@@ -342,20 +393,53 @@ function indextank_provision_account() {
         update_option("it_api_url", $config->INDEXTANK_PRIVATE_API_URL);
         // the index name is ALWAYS idx for public provisioning
         update_option("it_index_name", "idx");
+    
+        // now that everything worked, just update the index version
+        update_option("it_index_version", INDEXTANK_INDEX_FORMAT_VERSION);
 
+        // set default index parameters
+        // need to wait, in order to let the index start
+        // AS reindexing is necessary, let reindexing page handle it
+        update_option("it_need_default_parameters", true);
 
-        // update default function to 'relevance'
-        $client = new Indextank_Api($config->INDEXTANK_PRIVATE_API_URL);
-        $index = $client->get_index("idx");
-        $index->add_function(0, 'r');
-        $index->add_function(1, '-age');
-
+        // nothing failed!
         return true;
     }
 
     // failed
     return false;
 }
+
+
+function indextank_set_default_index_parameters() {
+    // update default function to 'relevance'
+    $it_api_url = get_option("it_api_url");
+    $client = new Indextank_Api($it_api_url);
+    $index = $client->get_index("idx");
+    $index->add_function(0, 'r');
+    $index->add_function(1, '-age');
+
+    // enable public search. just in case
+    $index->update_index(array("public_search" => true));
+} 
+
+function indextank_reset_index() {
+    $it_api_url = get_option("it_api_url");
+    $client = new Indextank_Api($it_api_url);
+    $index = $client->get_index("idx");
+    $index->delete_index();
+
+    // create it again
+    $client->create_index("idx");
+
+    // set default index parameters
+    // need to wait, in order to let the index start
+    // AS reindexing is necessary, let reindexing page handle it
+    update_option("it_need_default_parameters", true);
+
+    // now that everything worked, just update the index version
+    update_option("it_index_version", INDEXTANK_INDEX_FORMAT_VERSION);
+} 
 
 
 function indextank_create_itjq_configuration() {
