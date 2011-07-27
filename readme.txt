@@ -2,7 +2,7 @@
 Contributors: dbuthay, flaptor
 Tags: search, realtime, relevance, better search, autocomplete, ajax, cloud, hosted, instantsearch
 Requires at least: 2.8
-Tested up to: 3.2
+Tested up to: 3.2.1
 Stable tag: 1.1.1
 
 IndexTank hosted, realtime search (FTW!)
