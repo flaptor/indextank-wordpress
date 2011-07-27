@@ -65,7 +65,17 @@ function indextank_batch_add_posts($index, $posts = array()){
     
 }
 
-function indextank_post_as_array($post) {
+function indextank_post_as_array($somepost) {
+    // need to grab global $post, as some filters rely on it.
+    // cough raw_html cough
+    global $post;
+    $post = $somepost;
+
+    // Google Analytics for wordpress 4.1.3 is buggy.
+    // if the filter is not removed, it render the following error
+    // 'Non-static method GA_Filter::the_content() cannot be called statically'
+    remove_filter("the_content", array("GA_Filter", "the_content"), 99);
+
     $content = array();
     $userdata = get_userdata($post->post_author);
     $content['post_author'] = sprintf("%s %s", $userdata->first_name, $userdata->last_name);
@@ -414,8 +424,9 @@ function indextank_provision_account() {
 function indextank_set_default_index_parameters() {
     // update default function to 'relevance'
     $it_api_url = get_option("it_api_url");
+    $it_index_name = get_option("it_index_name");
     $client = new Indextank_Api($it_api_url);
-    $index = $client->get_index("idx");
+    $index = $client->get_index($it_index_name);
     $index->add_function(0, 'r');
     $index->add_function(1, '-age');
 
@@ -425,12 +436,13 @@ function indextank_set_default_index_parameters() {
 
 function indextank_reset_index() {
     $it_api_url = get_option("it_api_url");
+    $it_index_name = get_option("it_index_name");
     $client = new Indextank_Api($it_api_url);
-    $index = $client->get_index("idx");
+    $index = $client->get_index($it_index_name);
     $index->delete_index();
 
     // create it again
-    $client->create_index("idx");
+    $client->create_index($it_index_name);
 
     // set default index parameters
     // need to wait, in order to let the index start
@@ -566,8 +578,8 @@ add_action('admin_head', 'indextank_set_ajax_button');
 
 
 /* Ajax, and violent indexing errors handling */
-function indextank_ajax_error_handler($errno, $errstr){
-  throw new ErrorException($errstr);
+function indextank_ajax_error_handler($errno, $errstr, $errfile, $errline){
+  throw new ErrorException("$errstr on $errfile at line $errline");
 }
 function indextank_ajax_shutdown_function() {
   $last_error = error_get_last();
