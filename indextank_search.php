@@ -513,8 +513,8 @@ function indextank_set_ajax_button(){
             action: 'indextank_handle_ajax_indexing',
             it_start: $start
         }
-        jQuery.ajax(ajaxurl, { 
-
+        jQuery.ajax({ 
+                  url: ajaxurl,
                   data: data,
                   dataType: 'json',
                   type: 'POST',
