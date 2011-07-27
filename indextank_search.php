@@ -82,6 +82,7 @@ function indextank_post_as_array($somepost) {
     $userdata = get_userdata($post->post_author);
     $content['post_author'] = "";
     $content['post_author'] .= isset($userdata->first_name) ? $userdata->first_name : $userdata->display_name;
+    $content['post_author'] .= " ";
     $content['post_author'] .= isset($userdata->last_name) ? $userdata->last_name : "";
     
     
