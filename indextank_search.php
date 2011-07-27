@@ -3,14 +3,14 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.1
+ * @version 1.1.1
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.1
+   Version: 1.1.1
    Author URI: http://twitter.com/dbuthay
  */
 
@@ -77,8 +77,14 @@ function indextank_post_as_array($somepost) {
     remove_filter("the_content", array("GA_Filter", "the_content"), 99);
 
     $content = array();
+
+    // build post_author
     $userdata = get_userdata($post->post_author);
-    $content['post_author'] = sprintf("%s %s", $userdata->first_name, $userdata->last_name);
+    $content['post_author'] = "";
+    $content['post_author'] .= isset($userdata->first_name) ? $userdata->first_name : $userdata->display_name;
+    $content['post_author'] .= isset($userdata->last_name) ? $userdata->last_name : "";
+    
+    
     $content['post_content'] = html_entity_decode(strip_tags(apply_filters("the_content", $post->post_content)), ENT_COMPAT, "UTF-8"); 
     $content['post_title'] = $post->post_title;
     $content['timestamp'] = strtotime($post->post_date_gmt);
@@ -96,7 +102,10 @@ function indextank_post_as_array($somepost) {
 
     $vars = array("0" => $post->comment_count);
 
-    return array("docid" => home_url() . $post->ID, "fields" => $content, "variables" => $vars);
+    # home_url is available since 3.0
+    $home_url = function_exists('home_url') ? home_url() : site_url();
+
+    return array("docid" => $home_url . $post->ID, "fields" => $content, "variables" => $vars);
 }
 
 
@@ -456,7 +465,8 @@ function indextank_reset_index() {
 
 function indextank_create_itjq_configuration() {
     $rss_url = get_bloginfo('rss2_url');
-    $blog_url = home_url();
+    # home_url is available since 3.0
+    $blog_url = function_exists('home_url') ? home_url() : site_url();
     $theme = get_current_theme();
     
 

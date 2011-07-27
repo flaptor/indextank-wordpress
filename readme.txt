@@ -3,7 +3,7 @@ Contributors: dbuthay, flaptor
 Tags: search, realtime, relevance, better search, autocomplete, ajax, cloud, hosted, instantsearch
 Requires at least: 2.8
 Tested up to: 3.2
-Stable tag: 1.1
+Stable tag: 1.1.1
 
 IndexTank hosted, realtime search (FTW!)
 
@@ -55,6 +55,11 @@ You'll get a message on your dashboard, in case you need to upgrade your index. 
 
 
 == Changelog ==
+
+= 1.1.1 =
+
+* Admin *Index All Posts* button working for MU 2.8
+* *Magic* configuration not working on 2.8, as *home_url()* didn't exist back then. Using site_url instead.
 
 = 1.1 = 
 
