@@ -468,7 +468,7 @@ function indextank_create_itjq_configuration() {
     $rss_url = get_bloginfo('rss2_url');
     # home_url is available since 3.0
     $blog_url = function_exists('home_url') ? home_url() : site_url();
-    $theme = get_current_theme();
+    $theme = sanitize_title(get_current_theme());
     
 
     $params = http_build_query( array(
@@ -495,7 +495,8 @@ function indextank_create_itjq_configuration() {
     }
 
 
-    $target_filename = dirname(__FILE__) . '/js/blogsearch.js';
+    $upload_dir = wp_upload_dir();
+    $target_filename = $upload_dir['basedir'] . "/blogsearch.$theme.js";
 
     // keep the old blogsearch.js, if existed
     if (file_exists($target_filename)) {
@@ -693,8 +694,21 @@ add_action('wp_head','inject_indextank_head_script');
 function indextank_include_js_css(){
     // check it's not an admin page
     if (!is_admin()) {
+
+        
+        $upload_dir = wp_upload_dir();
+        $theme = sanitize_title(get_current_theme());
+
+        if (file_exists( $upload_dir['basedir'] . "/blogsearch.$theme.js") ) {
+            $blogsearch_file = $upload_dir['baseurl'] . "/blogsearch.$theme.js";
+        } else {
+            $blogsearch_file = plugins_url("js/blogsearch.js", __FILE__);
+        }
+
+
+
         wp_enqueue_style("jquery-ui","http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.5/themes/flick/jquery-ui.css");
-        wp_enqueue_script("itwpsearch", plugins_url( "js/blogsearch.js", __FILE__), array("instantsearch"));
+        wp_enqueue_script("itwpsearch", $blogsearch_file, array("instantsearch"));
         wp_enqueue_script("instantsearch", plugins_url( "js/jquery.indextank.instantsearch.js", __FILE__), array("ize"));
         wp_enqueue_script("autocomplete", plugins_url( "js/jquery.indextank.autocomplete.js", __FILE__), array("ize"));
         wp_enqueue_script("statsrenderer", plugins_url( "js/jquery.indextank.statsrenderer.js", __FILE__), array("ize"));
