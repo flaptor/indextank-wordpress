@@ -3,7 +3,7 @@ Contributors: dbuthay, flaptor
 Tags: search, realtime, relevance, better search, autocomplete, ajax, cloud, hosted, instantsearch
 Requires at least: 2.8
 Tested up to: 3.2.1
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 
 IndexTank hosted, realtime search (FTW!)
 
@@ -55,6 +55,12 @@ You'll get a message on your dashboard, in case you need to upgrade your index. 
 
 
 == Changelog ==
+
+= 1.1.2 = 
+
+* Add checkbox to toggle applying filters to 'the_content' before indexing.
+* blogsearch.$theme.js is not overwriten on plugin upgrade.
+* No need to use *'Magic'* when changing the theme, if you have used it before on the target theme.
 
 = 1.1.1 =
 
