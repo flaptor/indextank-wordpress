@@ -3,7 +3,7 @@ Contributors: dbuthay, flaptor
 Tags: search, realtime, relevance, better search, autocomplete, ajax, cloud, hosted, instantsearch
 Requires at least: 2.8
 Tested up to: 3.2.1
-Stable tag: 1.1.2
+Stable tag: 1.1.3
 
 IndexTank hosted, realtime search (FTW!)
 
@@ -55,6 +55,10 @@ You'll get a message on your dashboard, in case you need to upgrade your index. 
 
 
 == Changelog ==
+
+= 1.1.3 = 
+
+* Bugfix: Only halt on E_ERRORs when indexing. 
 
 = 1.1.2 = 
 

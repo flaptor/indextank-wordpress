@@ -3,14 +3,14 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.1.2
+ * @version 1.1.3
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.1.2
+   Version: 1.1.3
    Author URI: http://twitter.com/dbuthay
  */
 
@@ -613,7 +613,9 @@ add_action('admin_head', 'indextank_set_ajax_button');
 
 /* Ajax, and violent indexing errors handling */
 function indextank_ajax_error_handler($errno, $errstr, $errfile, $errline){
-  throw new ErrorException("$errstr on $errfile at line $errline");
+  if ($errno === E_ERROR) { 
+    throw new ErrorException("$errstr on $errfile at line $errline");
+  } 
 }
 function indextank_ajax_shutdown_function() {
   $last_error = error_get_last();
