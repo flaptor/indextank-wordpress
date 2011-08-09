@@ -1,6 +1,6 @@
-=== IndexTank ===
+=== IndexTank Search ===
 Contributors: dbuthay, flaptor
-Tags: search, realtime, relevance, better search, autocomplete, ajax, cloud, hosted, instantsearch
+Tags: search, better search, search replacement, autocomplete, ajax, cloud, instantsearch, suggestions, autocorrect
 Requires at least: 2.8
 Tested up to: 3.2.1
 Stable tag: 1.1.3
@@ -9,15 +9,15 @@ IndexTank hosted, realtime search (FTW!)
 
 == Description == 
 
-IndexTank brings nice, instant search to your blog. 
+IndexTank brings nice, instant search to your blog, with automatic suggestions of query terms, and super-fast ajax-style search.
 
 = Features = 
 
-* No need to write PHP code
+* InstantSearch: See results as you type!
+* AutoComplete.
 * Works with *ALL* WordPress templates 
-* InstantSearch
-* AutoComplete
 * Pagination
+* No need to write PHP code
 
 == Installation ==
 
