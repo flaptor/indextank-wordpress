@@ -3,14 +3,14 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.1.3
+ * @version 1.1.4
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.1.3
+   Version: 1.1.4
    Author URI: http://twitter.com/dbuthay
  */
 
@@ -194,6 +194,12 @@ function indextank_index_posts($offset=0, $pagesize=30){
 
 
 // TODO allow to delete the index.
+function indextank_notify_curl_needed() {
+    if (!function_exists('curl_init') ) {
+        echo '<div id="message" class="error">You MUST update your <strong>PHP</strong> installation to include CURL to use the IndexTank plugin.</div>';
+    }     
+}
+add_action( 'admin_notices', 'indextank_notify_curl_needed');
 
 function indextank_notify_upgrade_needed() {
     // this version number has to do with the 'format' of the index. Not the plugin version
@@ -225,7 +231,10 @@ function indextank_manage_page() {
         }
     }
 
-    if (isset($_POST['provision'])) {
+    $it_api_url = get_option("it_api_url");
+    $it_index_name = get_option("it_index_name");
+
+    if (isset($_POST['provision']) && !$it_api_url) {
         indextank_provision_account();
     } 
     
@@ -249,10 +258,6 @@ function indextank_manage_page() {
         indextank_reset_index();
     }
 
-
-    $it_api_url = get_option("it_api_url");
-    $it_index_name = get_option("it_index_name");
-
     ?>
         <div class="wrap">
             <div id="icon-tools" class="icon32"><br></div>
@@ -260,6 +265,12 @@ function indextank_manage_page() {
             
             <h2>IndexTank Search Configuration</h2>
             <?php
+              if ( !function_exists('curl_init') ) {
+              ?>
+                <p> Your PHP installation lacks CURL support. Contact your sysadmin and ask them to activate CURL for your PHP installation. </p>
+            <?php
+                return;
+              } 
                 if ( ( $it_api_url     == false ) && 
                      ( $it_index_name  == false ) ) { 
                 ?>
