@@ -3,18 +3,18 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.1.4
+ * @version 1.1.5
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.1.4
+   Version: 1.1.5
    Author URI: http://twitter.com/dbuthay
  */
 
-
+$indextank_plugin_version = '1.1.5';
 require_once("indextank.php");
 
 // the indextank index format version.
@@ -173,7 +173,7 @@ function indextank_index_posts($offset=0, $pagesize=30){
         ini_set('max_execution_time', 0);
         ini_set('max_input_time', 0);
         $my_query = new WP_Query();
-        $query_res = $my_query->query("post_status=publish&orderby=ID&order=DESC&posts_per_page=$pagesize&offset=$offset");
+        $query_res = $my_query->query("post_status=publish&orderby=ID&order=DESC&post_type=any&posts_per_page=$pagesize&offset=$offset");
         $message = "";
         if ($query_res) {
             // this may throw an exception .. let it float!
@@ -683,9 +683,11 @@ function inject_indextank_head_script(){
     $private_api_url = get_option("it_api_url", "http://:aoeu@indextank.com/");
     $parts = explode("@", $private_api_url, 2);
     $public_api_url = "http://" . $parts[1];
+    global $indextank_plugin_version;
     ?>
         <script>
 
+            var INDEXTANK_PLUGIN_VERSION = "<?php echo $indextank_plugin_version;?>";
             var INDEXTANK_PUBLIC_URL = "<?php echo $public_api_url;?>";
             var INDEXTANK_INDEX_NAME = "<?php echo get_option("it_index_name");?>";
 
