@@ -110,6 +110,36 @@ function indextank_post_as_array($somepost) {
         }  
     }
 
+    // now, make sure the document is not over 100kb
+    $sum = array_sum(
+        array_map(
+            'mb_strlen',
+            array_values( $content )
+        )
+    );
+
+    $excess = $sum - ( 100 * 1024 ) ;
+    if ($excess > 0) {
+        // first trim text, as it just removes tokens from autocomplete
+        // then, try trimming text .. 
+        $trim_candidates = array("text", "post_content");
+        foreach ($trim_candidates as $field) {
+            $field_length = mb_strlen($content[$field]);
+
+            // is the excess bigger than the field? unset it
+            if ($excess > $field_length) {
+                $excess -= $field_length;
+                unset($content[$field]);
+            } else {
+                // ok, we only need to trim a bit
+                $content[$field] = substr($content[$field], 0, $excess * -1);
+                break;
+            }
+        }
+    }
+
+
+
     $vars = array("0" => $post->comment_count);
 
     # home_url is available since 3.0
@@ -282,12 +312,11 @@ function indextank_manage_page() {
                </p>
                </form>
 
-                <div style="clear:both"></div>
                 <?php
                 }
                 ?>
  
-            <form METHOD="POST" action="" style="float:left">
+            <form METHOD="POST" action="" style="float:left; clear:left">
                 <h3>Index parameters</h3>
                 <table class="form-table"> 
                     <tr> 
@@ -389,7 +418,7 @@ function indextank_manage_page() {
             <h2>Look and Feel</h2>
             <form METHOD="POST" action="">
             <p style="line-height: 1.7em">
-                Indextank is compatible with most Wordpress plugins out-of-the-box. If posts are not rendered nicely, you can try reconfiguring it with
+                Indextank is compatible with most Wordpress themes out-of-the-box. If posts are not rendered nicely, you can try reconfiguring it with
                 <input type="submit" name="create-itjq" value="Magic!">
             </p>
             </form>
