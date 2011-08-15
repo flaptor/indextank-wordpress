@@ -3,18 +3,18 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.1.5
+ * @version 1.1.7
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.1.5
+   Version: 1.1.7
    Author URI: http://twitter.com/dbuthay
  */
 
-$indextank_plugin_version = '1.1.5';
+$indextank_plugin_version = '1.1.7';
 require_once("indextank.php");
 
 // the indextank index format version.
