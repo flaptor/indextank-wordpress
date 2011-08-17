@@ -82,6 +82,18 @@ Query.prototype.withCategoryFilters = function (categoryFilters) {
     return this;
 };
 
+Query.prototype.withoutCategories = function (categories) {
+    if (this.categoryFilters == null) {
+        this.categoryFilters = {};
+    } else {
+        for (idx in categories) {
+            delete this.categoryFilters[categories[idx]];
+        }
+    }
+
+    return this;
+};
+
 Query.prototype.withQueryVariables = function (queryVariables) {
     if (this.queryVariables == null) {
         this.queryVariables = {};
@@ -120,7 +132,7 @@ Query.prototype.clone = function() {
     if (this.scoringFunction != null) q.scoringFunction = this.scoringFunction;
     if (this.snippetFields != null) q.snippetFields = this.snippetFields;
     if (this.fetchFields != null) q.fetchFields = this.fetchFields;
-    if (this.category_filters != null) q.category_filters = this.category_filters;
+    if (this.categoryFilters != null) q.categoryFilters = this.categoryFilters;
     if (this.documentVariableFilters != null) q.documentVariableFilters = this.documentVariableFilters;
     if (this.functionFilters != null) q.functionFilters = this.functionFilters;
     if (this.queryVariables != null) q.queryVariables = this.queryVariables;

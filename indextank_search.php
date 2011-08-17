@@ -3,18 +3,18 @@
 /**
  * @package Indextank Search
  * @author Diego Buthay
- * @version 1.1.7
+ * @version 1.2
  */
 /*
    Plugin Name: IndexTank Search
    Plugin URI: http://github.com/flaptor/indextank-wordpress/
    Description: IndexTank makes search easy, scalable, reliable .. and makes you happy :)
    Author: Diego Buthay
-   Version: 1.1.7
+   Version: 1.2
    Author URI: http://twitter.com/dbuthay
  */
 
-$indextank_plugin_version = '1.1.7';
+$indextank_plugin_version = '1.2';
 require_once("indextank.php");
 
 // the indextank index format version.
@@ -725,6 +725,15 @@ function inject_indextank_head_script(){
 
         <style>
 
+        #sorting span.selected { 
+            font-weight: bolder;
+        }
+
+        #sorting span {
+            cursor: pointer;
+        }
+
+
         #paginator {
             font-size: 1.4em;
         }
@@ -779,6 +788,7 @@ function indextank_include_js_css(){
         wp_enqueue_script("autocomplete", plugins_url( "js/jquery.indextank.autocomplete.js", __FILE__), array("ize"));
         wp_enqueue_script("statsrenderer", plugins_url( "js/jquery.indextank.statsrenderer.js", __FILE__), array("ize"));
         wp_enqueue_script("renderer", plugins_url( "js/jquery.indextank.renderer.js", __FILE__), array("ize"));
+        wp_enqueue_script("sorting", plugins_url( "js/jquery.indextank.sorting.js", __FILE__), array("ize"));
         wp_enqueue_script("pagination", plugins_url( "js/jquery.indextank.pagination.js", __FILE__), array("ize"));
         wp_enqueue_script("ajaxsearch", plugins_url( "js/jquery.indextank.ajaxsearch.js", __FILE__), array("ize"));
         wp_enqueue_script("querybuilder", plugins_url( "js/querybuilder.js", __FILE__), array("ize"));
