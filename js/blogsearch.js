@@ -61,7 +61,7 @@
       
 
       var setupContainer = function($el) {
-        $el.children().not("#stats, #paginator").detach();
+        $el.children().not("#stats, #paginator, #sorting").detach();
       }
 
       var afterRender = function($el) {
@@ -70,22 +70,53 @@
         $el.append(p);
       }
 
+      // Listeners for indextank_AjaxSearch
+      var listeners = jQuery(new Object());
+
       // create some placeholders
-      var stContainer = jQuery("<div/>").attr("id", "stats").hide();
-      stContainer.append( jQuery("<span/>") );
-      var sortingContainer = jQuery("<div/>").attr("id","sorting").hide();
-      var pContainer  = jQuery("<div/>").attr("id", "paginator").hide();
-      jQuery("#content").prepend(pContainer).prepend(stContainer).prepend(sortingContainer);
+      // - stats
+      var stContainer = jQuery('<div/>').attr('id','stats').hide();
+      stContainer.append(jQuery('<span/>')); // deal with stats wanting something inside the container, to 'replace'
+      stContainer.indextank_StatsRenderer();
+      listeners = listeners.add(stContainer);
+
+      // - sorting
+      // it may not be present on indextank-wordpress < 1.2 .. check it first
+      if (jQuery.fn.indextank_Sorting) { 
+        var sortingContainer = jQuery('<div/>').attr('id', 'sorting').hide();
+        sortingContainer.indextank_Sorting({labels: {'relevance': 0, 'newest': 1, 'comments': 2 }});
+        jQuery('#content').prepend(sortingContainer);
+        listeners = listeners.add(sortingContainer);
+
+        // sorting controls should appear as soon as a query triggers .. no sooner.
+        // fix that
+        var sortingVisible = jQuery(new Object()).bind('Indextank.AjaxSearch.success', function(){
+          jQuery('#sorting').show();
+        });
+        listeners = listeners.add(sortingVisible);
+      } 
 
 
-      var rw = function(q) { return 'post_content:(' + q + ') OR post_title:(' + q + ') OR post_author:(' + q + ')';}
-      var r = jQuery('#content').indextank_Renderer({format: fmt, setupContainer: setupContainer, afterRender:afterRender});
-      //var st = jQuery('#stats').indextank_StatsRenderer();
-      var st = stContainer.indextank_StatsRenderer();
-      var p = pContainer.indextank_Pagination({maxPages:5});
-      var so = sortingContainer.indextank_Sorting({labels: {"relevance":0, "newest":1}});
+      // - pagination
+      var pContainer = jQuery('<div/>').attr('id','paginator').hide();
+      pContainer.indextank_Pagination({maxPages:5});
+      listeners = listeners.add(pContainer);
+
+      jQuery('#content').prepend(stContainer).append(pContainer);
+
+      
+      var rw = function(q) { 
+        if (/[):]/.test(q)) return q;
+        
+        //else
+        return 'post_content:(' + q + ') OR post_title:(' + q + ') OR post_author:(' + q + ')';
+      }
+      
+
+      var r = jQuery('#content').indextank_Renderer({format: fmt, setupContainer: setupContainer, afterRender: afterRender});
+      listeners = listeners.add(r);
       jQuery('#s').parents('form').indextank_Ize(INDEXTANK_PUBLIC_URL, INDEXTANK_INDEX_NAME);
-      jQuery('#s').indextank_Autocomplete().indextank_AjaxSearch({ listeners: [r,p,st,so], 
+      jQuery('#s').indextank_Autocomplete().indextank_AjaxSearch({ listeners: listeners, 
                                                                    fields: 'post_title,post_author,timestamp,url,thumbnail,post_content',
                                                                    snippets:'post_content', 
                                                                    rewriteQuery: rw }).indextank_InstantSearch();
