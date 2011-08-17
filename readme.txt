@@ -15,7 +15,10 @@ IndexTank brings nice, instant search to your blog, with automatic suggestions o
 
 * InstantSearch: See results as you type!
 * AutoComplete.
-* Works with *ALL* WordPress templates 
+* Match highlighting. Displays just the *relevant* parts of the matched posts.
+* Phrase matching. You can use *'quotes'* to get exact matches.
+* Works with *ALL* WordPress templates
+* Sorting. Order results by **relevance**, **newest** or **comments**
 * Pagination
 * No need to write PHP code
 
