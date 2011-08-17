@@ -31,6 +31,7 @@
                 // nothing to see here .. go on!
                 if (totalPages < 2 ) return; 
 
+                base.$el.append( $("<div/>").css({'float':'left'}).text('More results'));
                 var ul = $("<ul/>").addClass("pagination");
 
                 // first, put selected page
@@ -75,8 +76,6 @@
 
                 }
 
-                // fix for zero-size, floating non-clickable list items
-                ul.append( $("<div/>").css({ clear: "both" }) );
 
                 // make pages clickable
                 $("li", ul).click(function(e){
@@ -95,8 +94,12 @@
                     d.searcher.trigger("Indextank.AjaxSearch.runQuery", q);
                 });
 
-                
                 ul.appendTo(base.$el);
+                
+
+                // fix for zero-size, floating non-clickable list items
+                ul.append( $("<div/>").css({ clear: "both" }) );
+                base.$el.append( $("<div/>").css({ clear: "both" }) );
             });
         };
         
